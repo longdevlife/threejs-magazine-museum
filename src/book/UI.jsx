@@ -6,46 +6,31 @@ export const pageAtom = atom(0);
 export const viewModeAtom = atom("showcase"); // "showcase" | "reading"
 
 export const pages = [
-  { front: "bìa đầu", back: "trang 1" },
-  { front: "trang 2", back: "trang 3" },
-  { front: "trang 4", back: "trang 5" },
-  { front: "trang 6", back: "trang 7" },
-  { front: "trang 8", back: "trang 9" },
-  { front: "trang 10", back: "trang 11" },
-  { front: "trang 12", back: "trang 13" },
-  { front: "trang 14", back: "trang 15" },
-  { front: "trang 16", back: "trang 17" },
-  { front: "trang 18", back: "trang 19" },
-  { front: "trang 20", back: "bìa cuối" },
+  { front: "bìa trước", back: "1.1" },
+  { front: "1.2", back: "2.1" },
+  { front: "2.2", back: "3.1" },
+  { front: "3.2", back: "4.1" },
+  { front: "4.2", back: "5.1" },
+  { front: "5.2", back: "bìa sau" },
 ];
 
 const pageLabels = [
-  "Bìa",
+  "Bìa trước",
+  "Trang 1",
   "Trang 2",
+  "Trang 3",
   "Trang 4",
-  "Trang 6",
-  "Trang 8",
-  "Trang 10",
-  "Trang 12",
-  "Trang 14",
-  "Trang 16",
-  "Trang 18",
-  "Trang 20",
+  "Trang 5",
   "Bìa sau",
 ];
 
 const pageTitles = [
   null,
+  "Trang 1",
   "Trang 2",
+  "Trang 3",
   "Trang 4",
-  "Trang 6",
-  "Trang 8",
-  "Trang 10",
-  "Trang 12",
-  "Trang 14",
-  "Trang 16",
-  "Trang 18",
-  "Trang 20",
+  "Trang 5",
   null,
 ];
 

@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 /**
  * ArtworkPopup — Popup chuyên nghiệp hiển thị tranh phóng to.
  * Hỗ trợ zoom phóng to/thu nhỏ bằng scroll wheel + pinch, kéo di chuyển khi đã zoom.
- * Hiển thị thông tin mô tả bên cạnh tranh (desktop) hoặc bên dưới (mobile).
  * Đóng bằng click vùng tối hoặc Escape.
  */
 export function ArtworkPopup({ panel, onClose }) {
@@ -126,15 +125,6 @@ export function ArtworkPopup({ panel, onClose }) {
   };
 
   const isZoomed = zoom > 1.05;
-  const hasDescription = visiblePanel.description && !isZoomed;
-
-  // Type badge mapping
-  const typeBadges = {
-    theory: { label: "Lý thuyết", color: "#C5A028" },
-    practice: { label: "Thực tiễn", color: "#C5272D" },
-    application: { label: "Vận dụng", color: "#6F8F4E" },
-  };
-  const badge = typeBadges[visiblePanel.type] || null;
 
   return (
     <div
@@ -188,143 +178,20 @@ export function ArtworkPopup({ panel, onClose }) {
         ✕
       </button>
 
-      {/* Content container — horizontal layout on desktop */}
+      {/* Content container */}
       <div
         ref={contentRef}
         style={{
           position: "relative",
           display: "flex",
-          flexDirection: hasDescription ? "row" : "column",
+          flexDirection: "column",
           alignItems: "center",
-          gap: hasDescription ? 36 : 0,
           maxWidth: "92vw",
           maxHeight: "92vh",
           cursor: "default",
           transition: "opacity 0.3s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
-        {/* Left info panel (desktop only, when not zoomed) */}
-        {hasDescription && (
-          <div
-            style={{
-              flex: "0 0 280px",
-              maxWidth: 300,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              gap: 16,
-              color: "#e5d5b5",
-              pointerEvents: "none",
-            }}
-            className="artwork-info-panel"
-          >
-            {/* Room tag */}
-            {visiblePanel.roomTitle && (
-              <div
-                style={{
-                  fontSize: 10,
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  color: visiblePanel.roomAccent || "#c5a028",
-                  fontWeight: "bold",
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                {visiblePanel.roomTitle}
-              </div>
-            )}
-
-            {/* Title */}
-            <h2
-              style={{
-                margin: 0,
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "clamp(22px, 3vw, 30px)",
-                fontWeight: 500,
-                color: "#fff8ed",
-                lineHeight: 1.15,
-              }}
-            >
-              {visiblePanel.title}
-            </h2>
-
-            {/* Heading / subtitle */}
-            {visiblePanel.heading && (
-              <p
-                style={{
-                  margin: 0,
-                  fontFamily: "'EB Garamond', serif",
-                  fontSize: "clamp(15px, 2vw, 18px)",
-                  fontStyle: "italic",
-                  color: "rgba(229, 213, 181, 0.55)",
-                  lineHeight: 1.5,
-                }}
-              >
-                {visiblePanel.heading}
-              </p>
-            )}
-
-            {/* Divider */}
-            <div
-              style={{
-                width: 40,
-                height: 2,
-                background: `linear-gradient(90deg, ${visiblePanel.roomAccent || "#C5A028"}, transparent)`,
-                borderRadius: 1,
-              }}
-            />
-
-            {/* Description */}
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 13,
-                lineHeight: 1.75,
-                color: "rgba(229, 213, 181, 0.72)",
-                fontWeight: 300,
-              }}
-            >
-              {visiblePanel.description}
-            </p>
-
-            {/* Type badge */}
-            {badge && (
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginTop: 4,
-                  alignSelf: "flex-start",
-                }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: badge.color,
-                    display: "inline-block",
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.15em",
-                    textTransform: "uppercase",
-                    color: "rgba(229,213,181,0.45)",
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: 600,
-                  }}
-                >
-                  {badge.label}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Baroque-style frame wrapper */}
         <div
           style={{
@@ -372,8 +239,8 @@ export function ArtworkPopup({ panel, onClose }) {
                 alt={visiblePanel.title || "Tác phẩm"}
                 style={{
                   display: "block",
-                  maxWidth: hasDescription ? "55vw" : "78vw",
-                  maxHeight: "72vh",
+                  maxWidth: "85vw",
+                  maxHeight: "82vh",
                   width: "auto",
                   height: "auto",
                   objectFit: "contain",
@@ -388,72 +255,7 @@ export function ArtworkPopup({ panel, onClose }) {
             </div>
           </div>
         </div>
-
-
-
-        {/* Bottom info for mobile or when no description (fallback) */}
-        {!isZoomed && !hasDescription && (
-          <div
-            style={{
-              marginTop: 18,
-              textAlign: "center",
-              maxWidth: 600,
-              color: "#e5d5b5",
-              pointerEvents: "none",
-            }}
-          >
-            {visiblePanel.roomTitle && (
-              <div
-                style={{
-                  fontSize: 11,
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  color: visiblePanel.roomAccent || "#c5a028",
-                  marginBottom: 6,
-                  fontWeight: "bold",
-                }}
-              >
-                {visiblePanel.roomTitle}
-              </div>
-            )}
-            <h2
-              style={{
-                margin: "0 0 6px",
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "clamp(18px, 3vw, 26px)",
-                fontWeight: 500,
-                color: "#fff8ed",
-                lineHeight: 1.2,
-              }}
-            >
-              {visiblePanel.title}
-            </h2>
-            {visiblePanel.heading && (
-              <p
-                style={{
-                  margin: 0,
-                  fontFamily: "'EB Garamond', serif",
-                  fontSize: "clamp(14px, 2vw, 17px)",
-                  fontStyle: "italic",
-                  color: "rgba(229, 213, 181, 0.6)",
-                  lineHeight: 1.5,
-                }}
-              >
-                {visiblePanel.heading}
-              </p>
-            )}
-          </div>
-        )}
       </div>
-
-      {/* Responsive CSS for artwork info panel */}
-      <style>{`
-        @media (max-width: 768px) {
-          .artwork-info-panel {
-            display: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

@@ -40,13 +40,13 @@ const rawRooms = [
         type: "theory",
         wall: "left",
         title: "Cơ sở lý thuyết",
-        heading: "Vận hành theo pháp luật",
+        heading: "Quy luật độc quyền",
+        description: "Cạnh tranh tự do dẫn đến tập trung sản xuất — khi vốn tích lũy đủ lớn, doanh nghiệp thống lĩnh thị trường và hình thành độc quyền. Thị trường gọi xe công nghệ tại Việt Nam là minh chứng sống động cho quy luật này.",
         // visitor-left wall when entering from the lobby (south wall, facing -z)
         position: [-16, 3, 4.9],
         rotation: [0, Math.PI, 0],
         images: [
-          "/museum/nhanuochophienhopphap/tuong_trai_1.png",
-          "/museum/nhanuochophienhopphap/tuong_trai_2.png"
+          "/museum/trienlam/triển lãm p1.png"
         ]
       },
       {
@@ -54,13 +54,13 @@ const rawRooms = [
         type: "practice",
         wall: "center",
         title: "Liên hệ thực tiễn",
-        heading: "Tính Hợp Hiến & Uy Tín",
+        heading: "Grab vs Xanh SM",
+        description: "Grab nắm giữ ~60% thị phần gọi xe Việt Nam. Xanh SM gia nhập cuối 2023 với chiến lược đốt vốn, nhưng cạnh tranh với kẻ đã độc quyền dữ liệu và hệ sinh thái là cuộc chiến không cân sức.",
         // back wall of left room (west wall, facing +x)
         position: [-21.9, 3, 0],
         rotation: [0, Math.PI / 2, 0],
         images: [
-          "/museum/nhanuochophienhopphap/tuong_giua_1.png",
-          "/museum/nhanuochophienhopphap/tuong_giua_2.png"
+          "/museum/trienlam/triển lãm p1 ngang .png"
         ]
       },
       {
@@ -68,13 +68,13 @@ const rawRooms = [
         type: "application",
         wall: "right",
         title: "Giá trị vận dụng",
-        heading: "Nền tảng chính danh",
+        heading: "Sự rút lui của Gojek",
+        description: "Gojek — 'kỳ lân' Indonesia — rút khỏi Việt Nam năm 2023 sau khi không thể phá vỡ thế độc quyền của Grab. Khi rào cản gia nhập quá cao, ngay cả đối thủ tỷ đô cũng phải bỏ cuộc.",
         // visitor-right wall when entering from the lobby (north wall, facing +z)
         position: [-16, 3, -4.9],
         rotation: [0, 0, 0],
         images: [
-          "/museum/nhanuochophienhopphap/tuong_phai_1.png",
-          "/museum/nhanuochophienhopphap/tuong_phai_2.png"
+          "/museum/trienlam/triển lãm p1 ngang kiểu khác.png"
         ]
       }
     ]
@@ -92,13 +92,13 @@ const rawRooms = [
         type: "theory",
         wall: "left",
         title: "Cơ sở lý thuyết",
-        heading: "Quản lý bằng pháp luật",
+        heading: "Tích lũy & Tập trung",
+        description: "Tích lũy tư bản và tập trung sản xuất là hai mặt của quá trình hình thành độc quyền. Trong thương mại điện tử, dữ liệu người dùng chính là 'tư bản' được tích lũy vô hình.",
         // left wall of center room (facing +x)
         position: [-5.9, 3, -19],
         rotation: [0, Math.PI / 2, 0],
         images: [
-          "/museum/nhanuocthuongtonphapluat/tuong_trai_1.png",
-          "/museum/nhanuocthuongtonphapluat/tuong_trai_2.png"
+          "/museum/trienlam/triển lãm p2.png"
         ]
       },
       {
@@ -106,13 +106,13 @@ const rawRooms = [
         type: "practice",
         wall: "center",
         title: "Liên hệ thực tiễn",
-        heading: "Đại án Vạn Thịnh Phát",
+        heading: "Shopee & TikTok Shop",
+        description: "Shopee thống lĩnh TMĐT Đông Nam Á bằng chiến lược trợ giá khổng lồ. TikTok Shop tấn công bằng livestream commerce — nhưng cả hai đều dùng chung một vũ khí: đốt tiền để loại bỏ đối thủ nhỏ.",
         // back wall of center room (facing +z)
         position: [0, 3, -23.9],
         rotation: [0, 0, 0],
         images: [
-          "/museum/nhanuocthuongtonphapluat/tuong_giua_1.png",
-          "/museum/nhanuocthuongtonphapluat/tuong_giua_2.png"
+          "/museum/trienlam/triển lãm p2 ngang .png"
         ]
       },
       {
@@ -120,13 +120,13 @@ const rawRooms = [
         type: "application",
         wall: "right",
         title: "Giá trị vận dụng",
-        heading: "Công bằng, bình đẳng",
+        heading: "Bóp nghẹt doanh nghiệp nội",
+        description: "Khi sàn TMĐT ngoại chiếm ưu thế, hàng ngàn doanh nghiệp nội địa trở thành 'người thuê sạp' trên chính thị trường của mình — phải trả phí hoa hồng, phí quảng cáo ngày càng tăng.",
         // right wall of center room (facing -x)
         position: [5.9, 3, -19],
         rotation: [0, -Math.PI / 2, 0],
         images: [
-          "/museum/nhanuocthuongtonphapluat/tuong_phai_1.png",
-          "/museum/nhanuocthuongtonphapluat/tuong_phai_2.png"
+          "/museum/trienlam/triển lãm p2 ngang kiểu khác.png"
         ]
       }
     ]
@@ -143,43 +143,42 @@ const rawRooms = [
         id: "room3-left",
         type: "theory",
         wall: "left",
-        title: "Cơ sở lý thuyết",
-        heading: "Pháp luật vì con người",
+        title: "Góc nhìn biện chứng",
+        heading: "Tài xế công nghệ",
+        description: "Bề nổi: Tài xế công nghệ là 'đối tác tự do'. Bản chất: Họ bị ràng buộc bởi thuật toán, chịu phạt nếu từ chối cuốc xe — một hình thức lao động phụ thuộc được ngụy trang dưới lớp vỏ công nghệ.",
         // visitor-left wall when entering from the lobby (north wall, facing +z)
         position: [16, 3, -4.9],
         rotation: [0, 0, 0],
         images: [
-          "/museum/phapquyennhannghia/tuong_trai_1.png",
-          "/museum/phapquyennhannghia/tuong_trai_2.png",
-          "/museum/phapquyennhannghia/tuong_trai_3.png"
+          "/museum/trienlam/triển lãm p3.png"
         ]
       },
       {
         id: "room3-center",
         type: "practice",
         wall: "center",
-        title: "Liên hệ thực tiễn",
-        heading: "Đặc xá & Khoan hồng",
+        title: "Góc nhìn biện chứng",
+        heading: "Nhà bán hàng nhỏ lẻ",
+        description: "Bề nổi: Sàn TMĐT 'hỗ trợ' người bán nhỏ tiếp cận hàng triệu khách. Bản chất: Phí sàn, flash sale ép giá, thuật toán ưu tiên hàng giá rẻ — khiến lợi nhuận thực tế gần bằng không.",
         // back wall of right room (east wall, facing -x)
         position: [21.9, 3, 0],
         rotation: [0, -Math.PI / 2, 0],
         images: [
-          "/museum/phapquyennhannghia/tuong_giua_1.png",
-          "/museum/phapquyennhannghia/tuong_giua_2.png"
+          "/museum/trienlam/triển lãm p3 ngang .png"
         ]
       },
       {
         id: "room3-right",
         type: "application",
         wall: "right",
-        title: "Giá trị vận dụng",
-        heading: "Kết hợp nghiêm minh & nhân đạo",
+        title: "Góc nhìn biện chứng",
+        heading: "Người tiêu dùng",
+        description: "Bề nổi: Người tiêu dùng hưởng lợi từ giá rẻ, miễn phí vận chuyển. Bản chất: Dữ liệu cá nhân bị thu thập, hành vi mua sắm bị điều khiển bởi thuật toán — bạn không chọn sản phẩm, sản phẩm chọn bạn.",
         // visitor-right wall when entering from the lobby (south wall, facing -z)
         position: [16, 3, 4.9],
         rotation: [0, Math.PI, 0],
         images: [
-          "/museum/phapquyennhannghia/tuong_phai_1.png",
-          "/museum/phapquyennhannghia/tuong_phai_2.png"
+          "/museum/trienlam/triển lãm p3 ngang kiểu khác.png"
         ]
       }
     ]

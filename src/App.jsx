@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState, useRef } from "react";
 import Navbar from "./game/sections/Navbar";
 
 const BookPage = lazy(() => import("./book/BookPage").then((module) => ({ default: module.BookPage })));
@@ -20,13 +20,43 @@ function getActiveTab() {
   return from ? from.id : "intro";
 }
 
+/** Premium loading spinner component */
+function PremiumLoader() {
+  return (
+    <div className="premium-loader">
+      <div className="loader-rings">
+        <div className="ring" />
+        <div className="ring" />
+        <div className="ring" />
+        <div className="loader-center-dot" />
+      </div>
+      <div className="loader-text">Đang tải</div>
+      <div className="loader-bar">
+        <div className="loader-bar-fill" />
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState(getActiveTab);
+  const [displayedTab, setDisplayedTab] = useState(getActiveTab);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [hasVisitedBook, setHasVisitedBook] = useState(false);
+  const transitionTimer = useRef(null);
 
   // React to browser back/forward and hash changes
   useEffect(() => {
-    const onNav = () => setActiveTab(getActiveTab());
+    const onNav = () => {
+      const newTab = getActiveTab();
+      setActiveTab(newTab);
+      setIsTransitioning(true);
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
+      transitionTimer.current = setTimeout(() => {
+        setDisplayedTab(newTab);
+        setIsTransitioning(false);
+      }, 250);
+    };
     window.addEventListener("hashchange", onNav);
     window.addEventListener("popstate", onNav);
     return () => {
@@ -36,37 +66,35 @@ function App() {
   }, []);
 
   const handleTabChange = (id) => {
+    if (id === activeTab && !isTransitioning) return;
+    
+    // Start exit transition
     setActiveTab(id);
+    setIsTransitioning(true);
     window.location.hash = id;
+
+    // After exit animation, swap content
+    if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    transitionTimer.current = setTimeout(() => {
+      setDisplayedTab(id);
+      setIsTransitioning(false);
+    }, 250); // matches tabFadeOut duration
   };
 
   return (
     <div style={{ width: "100%", minHeight: "100vh", position: "relative", overflowX: "hidden" }}>
       <Navbar activeTab={activeTab} onTabChange={handleTabChange} />
-      {/* Tab Content */}
-      <div style={{ width: "100%", minHeight: "100vh" }}>
-        <Suspense
-          fallback={
-            <div
-              style={{
-                minHeight: "100vh",
-                display: "grid",
-                placeItems: "center",
-                background: "#090604",
-                color: "#fff8ed",
-                fontFamily: "'Outfit', sans-serif",
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-              }}
-            >
-              Đang tải
-            </div>
-          }
-        >
-          {activeTab === "intro" && <TheoryPage />}
-          {activeTab === "book" && <BookPage skipIntro={hasVisitedBook} onIntroFinish={() => setHasVisitedBook(true)} />}
-          {activeTab === "museum" && <MuseumPage />}
-          {activeTab === "ai" && <AIUsagePage />}
+      {/* Tab Content with Transition */}
+      <div
+        key={displayedTab}
+        className={isTransitioning ? "tab-transition-exit" : "tab-transition-enter"}
+        style={{ width: "100%", minHeight: "100vh" }}
+      >
+        <Suspense fallback={<PremiumLoader />}>
+          {displayedTab === "intro" && <TheoryPage />}
+          {displayedTab === "book" && <BookPage skipIntro={hasVisitedBook} onIntroFinish={() => setHasVisitedBook(true)} />}
+          {displayedTab === "museum" && <MuseumPage />}
+          {displayedTab === "ai" && <AIUsagePage />}
         </Suspense>
       </div>
     </div>

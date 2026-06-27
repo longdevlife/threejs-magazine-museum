@@ -24,6 +24,10 @@ export function MuseumArtwork({ panel, focused, onSelect }) {
     document.body.style.cursor = "default";
   }, []);
 
+  const isLandscape = panel.imageSrc && panel.imageSrc.includes("ngang");
+  const w = isLandscape ? 2.6 : 1.8;
+  const h = isLandscape ? 1.8 : 2.4;
+
   return (
     <group
       position={panel.position}
@@ -32,37 +36,37 @@ export function MuseumArtwork({ panel, focused, onSelect }) {
     >
       {/* Lớp 1: Khung nền gỗ sẫm */}
       <mesh position={[0, 0, -0.06]}>
-        <boxGeometry args={[2.3, 2.9, 0.1]} />
+        <boxGeometry args={[w + 0.5, h + 0.5, 0.1]} />
         <meshStandardMaterial color={FRAME_DARK} roughness={0.85} metalness={0.1} />
       </mesh>
 
       {/* Lớp 2: Gờ Baroque đồng cổ */}
       <mesh position={[0, 0, -0.015]}>
-        <boxGeometry args={[2.24, 2.84, 0.06]} />
+        <boxGeometry args={[w + 0.44, h + 0.44, 0.06]} />
         <meshStandardMaterial color={FRAME_GOLD_DARK} roughness={0.36} metalness={0.82} />
       </mesh>
 
       {/* Lớp 3: Vát cạnh gỗ tối */}
       <mesh position={[0, 0, 0.01]}>
-        <boxGeometry args={[2.14, 2.74, 0.05]} />
+        <boxGeometry args={[w + 0.34, h + 0.34, 0.05]} />
         <meshStandardMaterial color="#3a2b20" roughness={0.65} metalness={0.3} />
       </mesh>
 
       {/* Lớp 4: Chỉ viền đồng cổ sáng */}
       <mesh position={[0, 0, 0.025]}>
-        <boxGeometry args={[2.02, 2.62, 0.04]} />
+        <boxGeometry args={[w + 0.22, h + 0.22, 0.04]} />
         <meshStandardMaterial color={FRAME_GOLD_LIGHT} roughness={0.32} metalness={0.85} />
       </mesh>
 
       {/* Lớp 5: Passpartout nhung đen */}
       <mesh position={[0, 0, 0.035]}>
-        <boxGeometry args={[1.94, 2.54, 0.03]} />
+        <boxGeometry args={[w + 0.14, h + 0.14, 0.03]} />
         <meshStandardMaterial color={FRAME_INNER_VELVET} roughness={0.95} metalness={0.05} />
       </mesh>
 
       {/* Lớp 6: Viền kim loại mảnh */}
       <mesh position={[0, 0, 0.045]}>
-        <boxGeometry args={[1.86, 2.46, 0.02]} />
+        <boxGeometry args={[w + 0.06, h + 0.06, 0.02]} />
         <meshStandardMaterial color={FRAME_GOLD_DARK} roughness={0.38} metalness={0.8} />
       </mesh>
 
@@ -73,7 +77,7 @@ export function MuseumArtwork({ panel, focused, onSelect }) {
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       >
-        <planeGeometry args={[1.8, 2.4]} />
+        <planeGeometry args={[w, h]} />
         <meshBasicMaterial map={texture} toneMapped={false} />
       </mesh>
     </group>

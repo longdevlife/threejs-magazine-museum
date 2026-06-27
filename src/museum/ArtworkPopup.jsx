@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 /**
  * ArtworkPopup — Popup chuyên nghiệp hiển thị tranh phóng to.
  * Hỗ trợ zoom phóng to/thu nhỏ bằng scroll wheel + pinch, kéo di chuyển khi đã zoom.
+ * Hiển thị thông tin mô tả bên cạnh tranh (desktop) hoặc bên dưới (mobile).
  * Đóng bằng click vùng tối hoặc Escape.
  */
 export function ArtworkPopup({ panel, onClose }) {
@@ -125,6 +126,15 @@ export function ArtworkPopup({ panel, onClose }) {
   };
 
   const isZoomed = zoom > 1.05;
+  const hasDescription = visiblePanel.description && !isZoomed;
+
+  // Type badge mapping
+  const typeBadges = {
+    theory: { label: "Lý thuyết", color: "#C5A028" },
+    practice: { label: "Thực tiễn", color: "#C5272D" },
+    application: { label: "Vận dụng", color: "#6F8F4E" },
+  };
+  const badge = typeBadges[visiblePanel.type] || null;
 
   return (
     <div
@@ -137,28 +147,184 @@ export function ArtworkPopup({ panel, onClose }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(6, 4, 2, 0.9)",
+        background: "rgba(6, 4, 2, 0.92)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         transition: "opacity 0.3s ease",
         cursor: "pointer",
       }}
     >
-      {/* Content container */}
+      {/* Close button */}
+      <button
+        onClick={handleClose}
+        style={{
+          position: "absolute",
+          top: "clamp(16px, 3vh, 32px)",
+          right: "clamp(16px, 3vw, 40px)",
+          zIndex: 1010,
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          border: "1px solid rgba(229,213,181,0.15)",
+          background: "rgba(0,0,0,0.4)",
+          color: "#e5d5b5",
+          fontSize: 18,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s ease",
+          backdropFilter: "blur(8px)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(197,160,40,0.3)";
+          e.currentTarget.style.borderColor = "rgba(197,160,40,0.5)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(0,0,0,0.4)";
+          e.currentTarget.style.borderColor = "rgba(229,213,181,0.15)";
+        }}
+      >
+        ✕
+      </button>
+
+      {/* Content container — horizontal layout on desktop */}
       <div
         ref={contentRef}
         style={{
           position: "relative",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: hasDescription ? "row" : "column",
           alignItems: "center",
-          gap: 0,
-          maxWidth: "88vw",
+          gap: hasDescription ? 36 : 0,
+          maxWidth: "92vw",
           maxHeight: "92vh",
           cursor: "default",
           transition: "opacity 0.3s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
+        {/* Left info panel (desktop only, when not zoomed) */}
+        {hasDescription && (
+          <div
+            style={{
+              flex: "0 0 280px",
+              maxWidth: 300,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              gap: 16,
+              color: "#e5d5b5",
+              pointerEvents: "none",
+            }}
+            className="artwork-info-panel"
+          >
+            {/* Room tag */}
+            {visiblePanel.roomTitle && (
+              <div
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  color: visiblePanel.roomAccent || "#c5a028",
+                  fontWeight: "bold",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {visiblePanel.roomTitle}
+              </div>
+            )}
+
+            {/* Title */}
+            <h2
+              style={{
+                margin: 0,
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "clamp(22px, 3vw, 30px)",
+                fontWeight: 500,
+                color: "#fff8ed",
+                lineHeight: 1.15,
+              }}
+            >
+              {visiblePanel.title}
+            </h2>
+
+            {/* Heading / subtitle */}
+            {visiblePanel.heading && (
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: "'EB Garamond', serif",
+                  fontSize: "clamp(15px, 2vw, 18px)",
+                  fontStyle: "italic",
+                  color: "rgba(229, 213, 181, 0.55)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {visiblePanel.heading}
+              </p>
+            )}
+
+            {/* Divider */}
+            <div
+              style={{
+                width: 40,
+                height: 2,
+                background: `linear-gradient(90deg, ${visiblePanel.roomAccent || "#C5A028"}, transparent)`,
+                borderRadius: 1,
+              }}
+            />
+
+            {/* Description */}
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 13,
+                lineHeight: 1.75,
+                color: "rgba(229, 213, 181, 0.72)",
+                fontWeight: 300,
+              }}
+            >
+              {visiblePanel.description}
+            </p>
+
+            {/* Type badge */}
+            {badge && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: 4,
+                  alignSelf: "flex-start",
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: badge.color,
+                    display: "inline-block",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.15em",
+                    textTransform: "uppercase",
+                    color: "rgba(229,213,181,0.45)",
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 600,
+                  }}
+                >
+                  {badge.label}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Baroque-style frame wrapper */}
         <div
           style={{
@@ -206,7 +372,7 @@ export function ArtworkPopup({ panel, onClose }) {
                 alt={visiblePanel.title || "Tác phẩm"}
                 style={{
                   display: "block",
-                  maxWidth: "78vw",
+                  maxWidth: hasDescription ? "55vw" : "78vw",
                   maxHeight: "72vh",
                   width: "auto",
                   height: "auto",
@@ -223,30 +389,10 @@ export function ArtworkPopup({ panel, onClose }) {
           </div>
         </div>
 
-        {/* Zoom indicator (only shows when zoomed) */}
-        {isZoomed && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: -36,
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "rgba(0,0,0,0.6)",
-              color: "#e5d5b5",
-              fontSize: 12,
-              padding: "4px 14px",
-              borderRadius: 20,
-              pointerEvents: "none",
-              fontFamily: "'Inter', sans-serif",
-              letterSpacing: "0.05em",
-            }}
-          >
-            {Math.round(zoom * 100)}% — cuộn để zoom, kéo để di chuyển
-          </div>
-        )}
 
-        {/* Info section */}
-        {!isZoomed && (
+
+        {/* Bottom info for mobile or when no description (fallback) */}
+        {!isZoomed && !hasDescription && (
           <div
             style={{
               marginTop: 18,
@@ -299,6 +445,15 @@ export function ArtworkPopup({ panel, onClose }) {
           </div>
         )}
       </div>
+
+      {/* Responsive CSS for artwork info panel */}
+      <style>{`
+        @media (max-width: 768px) {
+          .artwork-info-panel {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

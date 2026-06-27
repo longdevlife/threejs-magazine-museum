@@ -43,7 +43,7 @@ export const IntroScreen = ({ onEnter }) => {
           className="text-5xl md:text-7xl font-bold mb-2 opacity-0 animate-[slideInFromTop_1s_ease_0.7s_forwards]"
           style={{ fontFamily: "'Playfair Display', serif", color: '#1A1A1A', lineHeight: 1.1 }}
         >
-          PHÁP QUYỀN
+          ĐỘC QUYỀN SỐ
         </h2>
 
         {/* Decorative line */}
@@ -58,7 +58,7 @@ export const IntroScreen = ({ onEnter }) => {
           className="tracking-[0.15em] uppercase text-xs mb-3 opacity-0 animate-[fadeIn_1s_ease_1.1s_forwards]"
           style={{ fontFamily: "'Inter', sans-serif", color: '#8B7355' }}
         >
-          Tư tưởng Hồ Chí Minh về Nhà nước pháp quyền
+          Vương triều độc quyền số
         </p>
 
         {/* Tagline */}
@@ -66,7 +66,7 @@ export const IntroScreen = ({ onEnter }) => {
           className="text-sm md:text-base max-w-md mx-auto leading-relaxed mb-10 opacity-0 animate-[fadeIn_1s_ease_1.3s_forwards]"
           style={{ fontFamily: "'EB Garamond', serif", color: '#5C5044', fontStyle: 'italic' }}
         >
-          Hợp hiến, hợp pháp — Thượng tôn pháp luật — Pháp quyền nhân nghĩa
+          Cạnh tranh tự do — Tập trung sản xuất — Độc quyền nhóm
         </p>
 
         {/* CTA Button */}

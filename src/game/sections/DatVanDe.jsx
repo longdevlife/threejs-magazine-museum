@@ -1,19 +1,19 @@
 export default function DatVanDe() {
   const elements = [
-    { n: '01', t: 'Hợp hiến, Hợp pháp', s: 'Tổ chức tổng tuyển cử phổ thông đầu phiếu (1946) để lập Quốc hội, tạo cơ sở pháp lý vững chắc trong quan hệ quốc tế.' },
-    { n: '02', t: 'Thượng tôn pháp luật', s: 'Quản lý bằng pháp luật là ưu tiên hàng đầu, bảo đảm thi hành nghiêm túc và khuyến khích nhân dân giám sát.' },
-    { n: '03', t: 'Pháp quyền nhân nghĩa', s: 'Pháp luật không chỉ để cai trị mà phải vì con người, lấy giáo dục và cảm hóa làm căn bản.' },
+    { n: '01', t: 'Tập trung sản xuất', s: 'Quy luật tất yếu khi cạnh tranh tự do buộc các chủ thể không ngừng tích tụ tư bản để mở rộng quy mô.' },
+    { n: '02', t: 'Độc quyền nảy sinh', s: 'Độc quyền sinh ra trực tiếp từ cạnh tranh tự do, nhưng không thủ tiêu cạnh tranh mà làm nó khốc liệt hơn.' },
+    { n: '03', t: 'Độc quyền tập đoàn', s: 'Cục diện các siêu nền tảng sở hữu nguồn vốn khổng lồ và thuật toán tối tân nắm quyền chi phối tuyệt đối.' },
   ];
   const practices = [
-    { n: '01', t: 'Yêu sách An Nam', s: 'Đòi hỏi cốt lõi: bình đẳng pháp lý, xóa bỏ tòa án áp bức và thay sắc lệnh bằng đạo luật.' },
-    { n: '02', t: 'Hoạt động lập pháp', s: 'Trực tiếp lãnh đạo soạn thảo 2 bản Hiến pháp (1946, 1959), ký ban hành 16 đạo luật và 613 sắc lệnh.' },
-    { n: '03', t: 'Quyền con người', s: 'Tiếp cận toàn diện: quyền tự nhiên, chính trị - dân sự đến kinh tế, văn hóa, chú trọng nhóm dễ bị tổn thương.' }
+    { n: '01', t: 'Siêu nền tảng số', s: 'Sự bành trướng của các tập đoàn Big Tech/Platforms chi phối các hoạt động kinh tế, xã hội toàn cầu.' },
+    { n: '02', t: 'Oligopoly (Độc quyền nhóm)', s: 'Thị trường phân chia giữa một vài thế lực khổng lồ, trực tiếp bóp nghẹt các chủ thể vừa và nhỏ.' },
+    { n: '03', t: 'Kiểm soát thuật toán', s: 'Sử dụng Big Data và hệ thống AI định giá động, phân phối đơn hàng để tối đa hóa giá trị thặng dư số.' }
   ];
   const solutions = [
-    { n: 'I', t: 'Bình đẳng', s: 'Xóa bỏ tòa án áp bức, thay sắc lệnh bằng đạo luật.' },
-    { n: 'II', t: 'Dân chủ', s: 'Thể hiện quyền lực tối cao của nhân dân qua bầu cử.' },
-    { n: 'III', t: 'Nghiêm minh', s: 'Phê phán tình trạng "thưởng quá rộng, phạt không nghiêm".' },
-    { n: 'IV', t: 'Nhân văn', s: 'Không đối xử dã man với con người, lấy giáo dục làm trọng.' },
+    { n: 'I', t: 'Tích lũy tư bản', s: 'Động lực sinh tồn buộc doanh nghiệp liên tục gia tăng quy mô vốn.' },
+    { n: 'II', t: 'Độc quyền nhóm', s: 'Cục diện phân chia thị trường của các thế lực khổng lồ.' },
+    { n: 'III', t: 'Bóc lột thặng dư', s: 'Khai thác tối đa người lao động tự do qua các ứng dụng số.' },
+    { n: 'IV', t: 'Thao túng thuật toán', s: 'Kiểm soát giá cả và dòng thông tin hiển thị của thị trường.' },
   ];
 
   const f1 = "'Playfair Display', serif";
@@ -28,11 +28,11 @@ export default function DatVanDe() {
           <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-[#7A6040]" style={{ fontFamily: f2 }}>Phần 1</span>
         </div>
         <h2 className="text-5xl md:text-7xl font-bold tracking-tight text-[#3D3529] mb-8 leading-snug" style={{ fontFamily: f1 }}>
-          <span className="gsap-text-reveal block pb-2 md:pb-3">Cơ Sở Lý Thuyết &</span>
-          <span className="gsap-text-reveal block italic font-light text-[#7A6040] pt-1">Nền Tảng Pháp Lý</span>
+          <span className="gsap-text-reveal block pb-2 md:pb-3">Cạnh Tranh & Độc Quyền</span>
+          <span className="gsap-text-reveal block italic font-light text-[#7A6040] pt-1">Quy Luật Tất Yếu</span>
         </h2>
         <p className="gsap-reveal text-lg text-[#7A6040] max-w-2xl leading-relaxed font-light" style={{ fontFamily: f2 }}>
-          Hồ Chí Minh sớm nhận thức tầm quan trọng của Hiến pháp. Khi trở thành người đứng đầu Nhà nước, Người chủ trương nhà nước phải được tổ chức và vận hành theo pháp luật.
+          Kinh tế chính trị Mác - Lênin chỉ ra rằng cạnh tranh tự do thúc đẩy tích tụ tư bản, từ đó tất yếu dẫn đến độc quyền. Trong kỷ nguyên số, quy luật này vận động tinh vi hơn qua ma trận thuật toán của các siêu nền tảng.
         </p>
       </div>
 
@@ -53,7 +53,7 @@ export default function DatVanDe() {
       <div className="w-full max-w-7xl mx-auto mb-32">
         <div className="gsap-reveal flex items-center justify-center gap-4 mb-16">
           <div className="h-[1px] w-12 bg-[#3D3529]/15 gsap-line-draw" />
-          <span className="text-sm tracking-[0.25em] text-[#7A6040]/60 uppercase font-semibold" style={{ fontFamily: f2 }}>Biểu Hiện Cụ Thể</span>
+          <span className="text-sm tracking-[0.25em] text-[#7A6040]/60 uppercase font-semibold" style={{ fontFamily: f2 }}>Cấu Trúc Vận Động</span>
           <div className="h-[1px] w-12 bg-[#3D3529]/15 gsap-line-draw" />
         </div>
         <div className="gsap-stagger-parent grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
@@ -72,7 +72,7 @@ export default function DatVanDe() {
       {/* Bottom Summary */}
       <div className="w-full max-w-7xl mx-auto">
         <div className="gsap-scale-in bg-white/50 rounded-[20px] border border-[#3D3529]/5 p-10 md:p-16">
-          <h3 className="gsap-reveal text-center text-sm font-semibold tracking-[0.2em] uppercase text-[#7A6040]/50 mb-16" style={{ fontFamily: f2 }}>Giá Trị Cốt Lõi</h3>
+          <h3 className="gsap-reveal text-center text-sm font-semibold tracking-[0.2em] uppercase text-[#7A6040]/50 mb-16" style={{ fontFamily: f2 }}>Cơ Chế Biện Chứng</h3>
           <div className="gsap-stagger-parent grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
             {solutions.map((item) => (
               <div key={item.t} className="gsap-stagger-child flex flex-col items-center text-center group">

@@ -52,16 +52,16 @@ export const UI = () => {
             <div>
               <h1 className="text-sm font-semibold tracking-wider uppercase"
                   style={{ fontFamily: 'Playfair Display, serif', color: '#1A1A1A' }}>
-                Karl Marx
+                Mác - Lênin
               </h1>
               <p className="text-xs tracking-widest uppercase" style={{ color: '#8B8680', fontSize: '10px' }}>
-                Tồn tại xã hội & Ý thức
+                Cạnh tranh & Độc quyền
               </p>
             </div>
           </div>
           <div className="text-right hidden sm:block">
             <p className="tracking-widest uppercase" style={{ color: '#8B8680', fontSize: '10px' }}>
-              Chương III • Tư Tưởng Hồ Chí Minh
+              Chương III • Kinh Tế Chính Trị
             </p>
           </div>
         </div>

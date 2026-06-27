@@ -72,25 +72,23 @@ export default function Hero() {
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
             <span className="gsap-text-reveal block font-light italic text-[#7A6040] text-3xl md:text-4xl lg:text-5xl mb-3">
-              Tư Tưởng
+              Vương Triều
             </span>
-            <span className="gsap-text-reveal block">Hồ Chí Minh</span>
+            <span className="gsap-text-reveal block">Độc Quyền Số</span>
           </h1>
 
           <p
             className="gsap-reveal text-sm md:text-base text-[#C5A028] font-semibold tracking-[0.15em] uppercase mb-8"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
-            Về Nhà Nước Pháp Quyền
+            Sự vận động của Cạnh tranh và Độc quyền trong nền Kinh tế hiện đại
           </p>
 
           <p
-            className="gsap-reveal text-base md:text-lg text-[#7A6040] max-w-xl leading-relaxed font-light mb-12 drop-shadow-sm"
+            className="gsap-reveal text-base md:text-lg text-[#7A6040] max-w-xl leading-relaxed font-light mb-12 drop-shadow-sm italic"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
-            Một nhà nước thực sự "của nhân dân, do nhân dân và vì nhân dân". Sự
-            kết hợp hài hoà giữa tính hợp pháp, tính thượng tôn pháp luật và
-            pháp quyền nhân nghĩa trong hệ thống chính trị Việt Nam.
+            "Cạnh tranh tự do đẻ ra tập trung sản xuất và sự tập trung sản xuất này, khi phát triển tới một mức độ nhất định, lại dẫn tới độc quyền." — V.I. Lênin
           </p>
 
           <div className="gsap-reveal flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -128,16 +126,17 @@ export default function Hero() {
                 className="font-semibold text-xs tracking-[0.08em] uppercase"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
-                Khám Phá Lý Thuyết
+                Tiêu Điểm Thực Tiễn
               </span>
             </a>
           </div>
 
           <div className="mt-14 flex flex-wrap gap-3">
             {[
-              "Hợp Hiến Hợp Pháp",
-              "Thượng Tôn Pháp Luật",
-              "Pháp Quyền Nhân Nghĩa",
+              "Cạnh Tranh Tự Do",
+              "Tập Trung Sản Xuất",
+              "Độc Quyền Nhóm",
+              "Kinh Tế Số",
             ].map((tag) => (
               <span
                 key={tag}

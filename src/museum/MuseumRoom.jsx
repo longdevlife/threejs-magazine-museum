@@ -304,7 +304,7 @@ function StanchionPost({ position }) {
 }
 
 function LobbyCenterpiece({ accent }) {
-  const { scene } = useGLTF("/models/president_ho_chi_minh_statue.glb");
+  const { scene } = useGLTF("/models/vladimir_lenin_portrait_monument.glb");
   const statueScene = useMemo(() => scene.clone(), [scene]);
 
   return (
@@ -401,9 +401,9 @@ function LobbyCenterpiece({ accent }) {
             borderImage: "linear-gradient(to right, #c5a028, #f4df8a, #c5a028) 1",
           }}
         >
-          Chủ tịch Hồ Chí Minh <br />
+          V.I. Lênin <br />
           <span style={{ fontSize: 10, fontFamily: "'Outfit', sans-serif", opacity: 0.85 }}>
-            (1890 - 1969)
+            (1870 - 1924)
           </span>
         </div>
       </Html>
@@ -653,9 +653,9 @@ export function MuseumRoom() {
         accent="#C5A028"
         label="Sảnh chính"
         openingLabels={{
-          left: "Nhà nước hợp hiến, hợp pháp",
-          back: "Nhà nước thượng tôn pháp luật",
-          right: "Pháp quyền nhân nghĩa",
+          left: "Gọi xe công nghệ",
+          back: "Thương mại điện tử",
+          right: "Biện chứng Bề nổi & Bản chất",
         }}
         chandelier="large"
         decor="lobby"

@@ -91,7 +91,7 @@ export function MuseumPage() {
             transition: "all 0.3s ease",
           }}
         >
-          {focusedPanel?.title || "Bảo tàng Nhà nước pháp quyền"}
+          {focusedPanel?.title || "Bảo tàng Cạnh tranh & Độc quyền"}
         </h1>
         <p
           style={{

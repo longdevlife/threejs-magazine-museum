@@ -112,7 +112,7 @@ export const UI = () => {
           className="absolute left-6 top-1/2 -translate-y-1/2 -rotate-90 origin-center text-[12px] tracking-[0.3em] font-light opacity-50 whitespace-nowrap uppercase"
           style={{ fontFamily: "'Inter', sans-serif", color: '#E5D5B5' }}
         >
-          Tạp Chí Pháp Quyền <span className="mx-4 text-[#C5272D] opacity-80">●</span> 2026
+          Tạp Chí Độc Quyền Số <span className="mx-4 text-[#C5272D] opacity-80">●</span> 2026
         </div>
 
         {/* Right Vertical */}
@@ -120,7 +120,7 @@ export const UI = () => {
           className="absolute right-6 top-1/2 -translate-y-1/2 rotate-90 origin-center text-[12px] tracking-[0.3em] font-light opacity-50 whitespace-nowrap uppercase"
           style={{ fontFamily: "'Inter', sans-serif", color: '#E5D5B5' }}
         >
-          Nhà Nước Pháp Quyền
+          Cạnh Tranh & Độc Quyền
         </div>
 
         {/* Top Left: Issue Stamp */}
@@ -137,7 +137,7 @@ export const UI = () => {
             Tiêu Điểm
           </span>
           <span className="text-[22px] max-w-[300px]" style={{ fontFamily: 'Playfair Display, serif', color: '#C5A028', fontStyle: 'italic', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-            Tư tưởng Hồ Chí Minh
+            Kinh Tế Chính Trị
           </span>
         </div>
 

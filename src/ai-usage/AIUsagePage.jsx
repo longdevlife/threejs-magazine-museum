@@ -20,7 +20,7 @@ const TOOLS = [
   {
     name: 'ChatGPT',
     purpose: 'Hỗ trợ phác thảo nội dung kịch bản, gợi ý dàn ý phân tích lý thuyết và lên ý tưởng cho các phòng triển lãm.',
-    human: 'Đối chiếu thông tin trực tiếp với Giáo trình Tư tưởng Hồ Chí Minh chính thống, biên tập lại toàn bộ lập luận theo văn phong học thuật và trực tiếp xây dựng kịch bản chi tiết.',
+    human: 'Đối chiếu thông tin trực tiếp với Giáo trình Kinh tế chính trị Mác - Lênin chính thống, biên tập lại toàn bộ lập luận theo văn phong học thuật và trực tiếp xây dựng kịch bản chi tiết.',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
     )
@@ -73,7 +73,7 @@ export const AIUsagePage = () => {
               <div className="w-full h-[1px] bg-[#3D3529]/10 my-2"></div>
               <div className="flex flex-col gap-2">
                 <h3 className="text-[#3D3529] font-medium tracking-widest text-[11px] uppercase opacity-80">Kiểm chứng thông tin</h3>
-                <p>Mọi nội dung do AI sinh ra (đặc biệt là phần tóm tắt và phân tích môn Tư tưởng Hồ Chí Minh) đều được đối chiếu trực tiếp với <strong className="text-[#3D3529] font-semibold">Giáo trình Tư tưởng Hồ Chí Minh chính thống</strong>. Chúng em hoàn toàn chịu trách nhiệm 100% về tính chính xác của thông tin.</p>
+                <p>Mọi nội dung do AI sinh ra (đặc biệt là phần tóm tắt và phân tích môn Kinh tế chính trị) đều được đối chiếu trực tiếp với <strong className="text-[#3D3529] font-semibold">Giáo trình Kinh tế chính trị Mác - Lênin chính thống</strong>. Chúng em hoàn toàn chịu trách nhiệm 100% về tính chính xác của thông tin.</p>
               </div>
               <div className="w-full h-[1px] bg-[#3D3529]/10 my-2"></div>
               <div className="flex flex-col gap-2">
@@ -131,7 +131,7 @@ export const AIUsagePage = () => {
                         <p className="text-[#7A6040] text-sm leading-relaxed">{tool.purpose}</p>
                       </div>
                       <div className="sm:w-1/2 bg-[#C5A028]/5 rounded-[12px] p-5 border border-[#C5A028]/10">
-                        <span className="text-[#C5A028] text-[10px] uppercase tracking-widest font-semibold block mb-3 flex items-center gap-2">
+                        <span className="text-[#C5A028] text-[10px] uppercase tracking-widest font-semibold mb-3 flex items-center gap-2">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                           Chúng em xử lý (Hoàn thiện)
                         </span>
@@ -160,7 +160,7 @@ export const AIUsagePage = () => {
                 <div className="bg-white/80 border border-[#3D3529]/10 rounded-lg p-4 mb-6">
                   <span className="text-[#C5A028] text-xs font-semibold uppercase tracking-wider block mb-2">Prompt:</span>
                   <p className="text-[#7A6040] text-[15px] leading-relaxed italic font-['EB_Garamond']">
-                    "Hãy từ giáo trình Tư tưởng Hồ Chí Minh 2021 đưa ra nội dung phân tích cho phần Cơ sở lý thuyết của Nhà nước pháp quyền trong tư tưởng Hồ Chí Minh, làm rõ quan điểm về Nhà nước hợp hiến, hợp pháp; Nhà nước thượng tôn pháp luật; và pháp quyền nhân nghĩa trong quản lý xã hội."
+                    "Hãy từ giáo trình Kinh tế chính trị Mác - Lênin đưa ra nội dung phân tích cho phần Cơ sở lý thuyết của sự tích tụ và tập trung sản xuất dẫn đến độc quyền và độc quyền nhóm."
                   </p>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-[#3D3529]/10 shadow-md">
@@ -176,7 +176,7 @@ export const AIUsagePage = () => {
                 <div className="bg-white/80 border border-[#3D3529]/10 rounded-lg p-4 mb-6">
                   <span className="text-[#C5A028] text-xs font-semibold uppercase tracking-wider block mb-2">Prompt:</span>
                   <p className="text-[#7A6040] text-[15px] leading-relaxed italic font-['EB_Garamond']">
-                    "Hãy từ giáo trình Tư tưởng Hồ Chí Minh 2021 đưa ra nội dung phân tích cho phần liên hệ thực tiễn của Nhà nước pháp quyền, làm rõ việc vận dụng tư tưởng Hồ Chí Minh về Nhà nước hợp hiến, hợp pháp; Nhà nước thượng tôn pháp luật; và pháp quyền nhân nghĩa trong hoạt động quản lý nhà nước và đời sống xã hội Việt Nam hiện nay."
+                    "Hãy từ giáo trình Kinh tế chính trị Mác - Lênin đưa ra nội dung phân tích cho phần liên hệ thực tiễn của độc quyền nhóm, làm rõ tình hình thị trường gọi xe công nghệ và thương mại điện tử Việt Nam hiện nay."
                   </p>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-[#3D3529]/10 shadow-md">
@@ -192,7 +192,7 @@ export const AIUsagePage = () => {
                 <div className="bg-white/80 border border-[#3D3529]/10 rounded-lg p-4 mb-6">
                   <span className="text-[#C5A028] text-xs font-semibold uppercase tracking-wider block mb-2">Prompt:</span>
                   <p className="text-[#7A6040] text-[15px] leading-relaxed italic font-['EB_Garamond']">
-                    "Hãy từ giáo trình Tư tưởng Hồ Chí Minh 2021 đưa ra nội dung phân tích cho phần giá trị vận dụng hiện nay của Nhà nước pháp quyền, làm rõ ý nghĩa của Nhà nước hợp hiến, hợp pháp; Nhà nước thượng tôn pháp luật; và pháp quyền nhân nghĩa trong xây dựng Nhà nước pháp quyền xã hội chủ nghĩa Việt Nam hiện nay."
+                    "Hãy từ giáo trình Kinh tế chính trị Mác - Lênin đưa ra nội dung phân tích cho phần biện chứng Bề nổi vs Bản chất của ma trận thuật toán số đối với tài xế, nhà bán lẻ và người tiêu dùng."
                   </p>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-[#3D3529]/10 shadow-md">

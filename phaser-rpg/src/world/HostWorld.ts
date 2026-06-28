@@ -26,6 +26,14 @@ const BOOK_MS = 400; // nhịp kiểm tra/bù sách
 const TRAP_TELEGRAPH_MS = 1200;
 const TRAP_HITBOX_SCALE = 0.65;
 const TRAP_IMMUNITY_MS = 5500;
+const GATE_ACTIVATION_DELAY = 3000;
+
+const HINT_MESSAGES = [
+  'Khách ruột đang ở gần khu chợ trung tâm',
+  'Có người tìm shop bạn gần cổng nền tảng',
+  'Khách quen đang ở sau dãy shop nhỏ',
+  'Có ai đó đang đợi bạn ở góc phải bản đồ',
+];
 
 // ponytail: narrow casts so tsc can index PHASE_ECONOMY_MIX by string key without `any`.
 type PhaseMix = (typeof PHASE_ECONOMY_MIX)[keyof typeof PHASE_ECONOMY_MIX];
@@ -120,9 +128,15 @@ export class HostWorld {
     this.clearTraps();
     await remove(ref(db, 'traps'));
     await remove(ref(db, 'books'));
+    await remove(ref(db, 'npcs'));
+    await remove(ref(db, 'gates'));
     this.handledMarketEvents.clear();
     if (PHASES.includes(status)) {
       this.spawnTraps(status);
+    }
+    // Phase 3: Auto-spawn escape gate
+    if (status === 'phase_3') {
+      this.spawnEscapeGate();
     }
   }
 
@@ -287,6 +301,20 @@ export class HostWorld {
 
   private handleMarketEvent(id: string, event: MarketEvent) {
     if (!event || event.phase !== this.status) return;
+
+    // Phase 2: Spawn loyal customer NPC
+    if (event.type === 'spawn_loyal_customer_npc') {
+      this.spawnLoyalCustomerNpc();
+      return;
+    }
+
+    // Phase 2: Hint for loyal customer
+    if (event.type === 'loyal_customer_hint') {
+      const hint = HINT_MESSAGES[Math.floor(Math.random() * HINT_MESSAGES.length)];
+      void set(ref(db, 'gameState/phase2Hint'), hint);
+      return;
+    }
+
     const mix = phaseMixMap[this.status];
     const marketEvent = MARKET_EVENTS[event.type as keyof typeof MARKET_EVENTS];
     if (!mix || !marketEvent) return;
@@ -311,6 +339,40 @@ export class HostWorld {
         },
       );
     }
+  }
+
+  private spawnLoyalCustomerNpc() {
+    const point = spawnAt({
+      preferredZones: ['central_market_path', 'shop_row_left'],
+      radius: 16,
+      isWalkable: this.isWalkable,
+    });
+
+    void set(ref(db, 'npcs/loyal_customer'), {
+      id: 'loyal_customer',
+      type: 'loyal_customer',
+      label: 'Khách Ruột',
+      x: point.x,
+      y: point.y,
+      zone: point.zone,
+    });
+  }
+
+  private spawnEscapeGate() {
+    const point = spawnAt({
+      preferredZones: ['niche_corner', 'platform_gate'],
+      radius: 24,
+      isWalkable: this.isWalkable,
+    });
+
+    void set(ref(db, 'gates/escape_gate'), {
+      id: 'escape_gate',
+      type: 'escape_gate',
+      label: 'Cổng Thoát',
+      x: point.x,
+      y: point.y,
+      activeAt: Date.now() + GATE_ACTIVATION_DELAY,
+    });
   }
 
   private expireBooks() {

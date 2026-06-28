@@ -77,14 +77,17 @@ export class Main extends Phaser.Scene {
   private localBooks: Map<string, Phaser.GameObjects.Container> = new Map();
   private localTraps: Map<string, Phaser.GameObjects.Container> = new Map();
 
-  // Trạng thái game
   private isFrozen = false;
   private lastSyncTime = 0;
   private collidedBooks: Set<string> = new Set();
+  private collidedNpcs: Set<string> = new Set();
+  private collidedGates: Set<string> = new Set();
   private trapCooldownUntil: Map<string, number> = new Map();
   private trapImmuneUntil = 0;
   private hostCursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private hostWorld?: HostWorld;
+  private localNpcs: Map<string, Phaser.GameObjects.Container> = new Map();
+  private localGates: Map<string, Phaser.GameObjects.Container> = new Map();
 
   constructor() {
     super(key.scene.main);
@@ -451,6 +454,131 @@ export class Main extends Phaser.Scene {
         }
       });
     });
+
+    // D. Lắng nghe NPC (Khách Ruột - Phase 2)
+    const npcsRef = ref(db, 'npcs');
+    onValue(npcsRef, (snapshot) => {
+      const npcsData = (snapshot.val() || {}) as Record<string, { x: number; y: number; label?: string }>;
+
+      Object.entries(npcsData).forEach(([id, npc]) => {
+        if (!this.localNpcs.has(id)) {
+          const container = this.add.container(npc.x, npc.y);
+
+          // NPC marker: teal colored person icon
+          const glow = this.add.graphics();
+          glow.fillStyle(0x00897b, 0.3);
+          glow.fillCircle(0, 0, 20);
+
+          const body_g = this.add.graphics();
+          body_g.fillStyle(0x00897b, 1);
+          body_g.fillCircle(0, -6, 8); // head
+          body_g.fillRoundedRect(-8, 2, 16, 14, 4); // body
+          body_g.lineStyle(2, 0xffffff, 0.9);
+          body_g.strokeCircle(0, -6, 8);
+
+          const npcLabel = this.add.text(0, -34, npc.label || 'Khách Ruột', {
+            fontSize: '22px',
+            fontFamily: 'VT323',
+            color: '#00e5cc',
+            backgroundColor: 'rgba(0,0,0,0.65)',
+            padding: { x: 6, y: 3 },
+          });
+          npcLabel.setOrigin(0.5, 0.5);
+
+          container.add([glow, body_g, npcLabel]);
+          container.setDepth(Depth.AbovePlayer);
+
+          this.physics.world.enable(container);
+          const phBody = container.body as Phaser.Physics.Arcade.Body;
+          phBody.setCircle(16, -16, -16);
+
+          if (playerRole !== 'host') {
+            this.physics.add.overlap(this.player, container, () => {
+              if (this.collidedNpcs.has(id)) return;
+              this.collidedNpcs.add(id);
+              window.parent.postMessage({ type: 'FOUND_LOYAL_CUSTOMER', npcId: id }, '*');
+            });
+          }
+
+          this.localNpcs.set(id, container);
+        } else {
+          this.localNpcs.get(id)!.setPosition(npc.x, npc.y);
+        }
+      });
+
+      this.localNpcs.forEach((val, id) => {
+        if (!npcsData[id]) {
+          val.destroy();
+          this.localNpcs.delete(id);
+        }
+      });
+    });
+
+    // E. Lắng nghe Gate (Cổng Thoát - Phase 3)
+    const gatesRef = ref(db, 'gates');
+    onValue(gatesRef, (snapshot) => {
+      const gatesData = (snapshot.val() || {}) as Record<string, { x: number; y: number; label?: string; activeAt?: number }>;
+
+      Object.entries(gatesData).forEach(([id, gate]) => {
+        if (!this.localGates.has(id)) {
+          const container = this.add.container(gate.x, gate.y);
+
+          // Gate: golden portal marker
+          const outerGlow = this.add.graphics();
+          outerGlow.fillStyle(0xc9922a, 0.25);
+          outerGlow.fillCircle(0, 0, 28);
+
+          const portal = this.add.graphics();
+          portal.lineStyle(3, 0xc9922a, 1);
+          portal.strokeCircle(0, 0, 20);
+          portal.lineStyle(2, 0xffd54f, 0.8);
+          portal.strokeCircle(0, 0, 14);
+          portal.fillStyle(0xffd54f, 0.3);
+          portal.fillCircle(0, 0, 10);
+
+          const gateLabel = this.add.text(0, -42, 'Cổng đang mở...', {
+            fontSize: '22px',
+            fontFamily: 'VT323',
+            color: '#ffd54f',
+            backgroundColor: 'rgba(0,0,0,0.65)',
+            padding: { x: 6, y: 3 },
+          });
+          gateLabel.setOrigin(0.5, 0.5);
+
+          container.add([outerGlow, portal, gateLabel]);
+          container.setDepth(Depth.AbovePlayer);
+          container.setData('activeAt', gate.activeAt || Date.now());
+          container.setData('gateLabel', gateLabel);
+
+          this.physics.world.enable(container);
+          const phBody = container.body as Phaser.Physics.Arcade.Body;
+          phBody.setCircle(20, -20, -20);
+
+          if (playerRole !== 'host') {
+            this.physics.add.overlap(this.player, container, () => {
+              if (this.collidedGates.has(id)) return;
+              const now = Date.now();
+              if (now < (container.getData('activeAt') || 0)) return;
+              this.collidedGates.add(id);
+              window.parent.postMessage({ type: 'ESCAPED_GATE', gateId: id }, '*');
+            });
+          }
+
+          this.localGates.set(id, container);
+        } else {
+          const existing = this.localGates.get(id)!;
+          existing.setPosition(gate.x, gate.y);
+          if (gate.activeAt) existing.setData('activeAt', gate.activeAt);
+        }
+      });
+
+      this.localGates.forEach((val, id) => {
+        if (!gatesData[id]) {
+          val.destroy();
+          this.localGates.delete(id);
+        }
+      });
+    });
   }
 
   private updateTrapVisuals() {
@@ -481,8 +609,23 @@ export class Main extends Phaser.Scene {
     });
   }
 
+  private updateGateVisuals() {
+    const now = Date.now();
+    this.localGates.forEach((container) => {
+      const label = container.getData('gateLabel') as Phaser.GameObjects.Text | undefined;
+      const activeAt = container.getData('activeAt') || 0;
+      const isActive = now >= activeAt;
+      if (label) {
+        label.setText(isActive ? 'Cổng Thoát ⭐' : 'Cổng đang mở...');
+        label.setAlpha(isActive ? 1 : 0.6);
+      }
+      container.setAlpha(isActive ? 1 : 0.5);
+    });
+  }
+
   update(time: number) {
     this.updateTrapVisuals();
+    this.updateGateVisuals();
 
     if (playerRole === 'host') {
       this.hostWorld?.update(time);

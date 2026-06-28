@@ -3,7 +3,7 @@ import { ref, set, onValue, remove, update, get, runTransaction } from "firebase
 import { db } from "./firebaseConfig";
 import { situations, PHASE_CONFIGS } from "./situations";
 import { applyPlayerDelta } from "./gameStateUtils";
-import { checkMapCollisions, WORLD_WIDTH, WORLD_HEIGHT } from "./rpgEngine";
+import { checkMapCollisions } from "./rpgEngine";
 import {
   PHASE_ECONOMY_MIX,
   getHazardDefinition,
@@ -54,23 +54,36 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   const platformFeeInFlight = useRef(false);
   const [books, setBooks] = useState({});
   const booksRef = useRef({});
+  const playersRef = useRef({});
 
-  // Cấu hình bẫy động theo phase
+  // 3 kiểu di chuyển bẫy — xen kẽ theo index để mỗi phase có đủ độ đa dạng
+  const TRAP_PATTERNS = ["chase", "diagonal", "patrol"];
+
+  // Cấu hình bẫy động theo phase — vị trí spawn trong vùng đi được thật, size/speed theo từng loại hazard
   const getInitialTraps = (phaseKey) => {
     const mix = PHASE_ECONOMY_MIX[phaseKey] || PHASE_ECONOMY_MIX.phase_1;
     const traps = {};
-    const positions = [
-      { x: 480, y: 300, axis: "y" },
-      { x: 1100, y: 700, axis: "y" },
-      { x: 500, y: 700, axis: "x" },
-      { x: 800, y: 200, axis: "x" },
-      { x: 300, y: 500, axis: "y" },
-      { x: 900, y: 400, axis: "x" },
-    ];
-    for (let i = 0; i < Math.min(mix.hazardCount, positions.length); i++) {
-      const p = positions[i];
+    for (let i = 0; i < mix.hazardCount; i++) {
       const selected = pickWeighted(mix.hazards);
       const hazard = getHazardDefinition(selected.type);
+      const pattern = TRAP_PATTERNS[i % TRAP_PATTERNS.length];
+      const speed = mix.hazardSpeed;
+      const size = hazard.size || 35;
+      const point = pickSpawnPoint({ preferredZones: mix.preferredZones, radius: size / 2 });
+
+      // Vận tốc ban đầu theo pattern: chéo đi 2 trục, tuần tra đi 1 trục chính
+      let vx = 0;
+      let vy = 0;
+      if (pattern === "diagonal") {
+        const angle = (i / mix.hazardCount) * Math.PI * 2;
+        vx = Math.cos(angle) * speed;
+        vy = Math.sin(angle) * speed;
+      } else if (pattern === "patrol") {
+        const dir = i % 4 < 2 ? 1 : -1;
+        if (i % 2 === 0) vx = speed * dir;
+        else vy = speed * dir;
+      }
+
       traps[`trap_${i + 1}`] = {
         id: `trap_${i + 1}`,
         type: hazard.type,
@@ -81,10 +94,13 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
         effect: hazard.effect,
         durationMs: hazard.durationMs,
         color: hazard.color,
-        x: p.x,
-        y: p.y,
-        ...(p.axis === "y" ? { dy: mix.hazardSpeed * (i % 2 === 0 ? 1 : -1) } : { dx: mix.hazardSpeed * (i % 2 === 0 ? 1 : -1) }),
-        size: 38,
+        x: point.x,
+        y: point.y,
+        size,
+        pattern,
+        speed,
+        vx,
+        vy,
       };
     }
     return traps;
@@ -100,7 +116,11 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
 
   // Lắng nghe players
   useEffect(() => {
-    const unsubPlayers = onValue(ref(db, "players"), (s) => setPlayers(s.val() || {}));
+    const unsubPlayers = onValue(ref(db, "players"), (s) => {
+      const val = s.val() || {};
+      setPlayers(val);
+      playersRef.current = val;
+    });
     const unsubBooks = onValue(ref(db, "books"), (s) => {
       const val = s.val() || {};
       setBooks(val);
@@ -172,16 +192,56 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     return () => cancelAnimationFrame(requestRef.current);
   }, [gameState.status]);
 
+  // ponytail: chase capped ~2.4px/frame < player ~2.9px/frame → player luôn thoát được khi chạy thẳng. Chỉnh nếu thấy quá dễ/khó.
+  const CHASE_SPEED_CAP = 2.4;
+
+  // Player còn sống gần bẫy nhất (để bẫy "chase" đuổi theo)
+  const nearestPlayer = (tx, ty) => {
+    let best = null;
+    let bestDist = Infinity;
+    Object.values(playersRef.current).forEach((p) => {
+      if (!p || p.isBankrupt || typeof p.x !== "number" || typeof p.y !== "number") return;
+      const d = (p.x - tx) ** 2 + (p.y - ty) ** 2;
+      if (d < bestDist) { bestDist = d; best = p; }
+    });
+    return best;
+  };
+
+  // Thử dời bẫy tới (nx,ny); chỉ dời nếu không đâm tường/biên. Trả về true nếu dời được.
+  const tryMove = (t, nx, ny) => {
+    if (checkMapCollisions(nx, ny, (t.size || 35) / 2)) return false;
+    t.x = nx;
+    t.y = ny;
+    return true;
+  };
+
   const moveTrapsLocal = () => {
     Object.values(localTraps.current).forEach((t) => {
-      if (t.dy) {
-        t.y += t.dy;
-        if (t.y < 120 || t.y > 800) t.dy *= -1;
+      const speed = t.speed || 3.5;
+
+      if (t.pattern === "chase") {
+        const target = nearestPlayer(t.x, t.y);
+        if (!target) return;
+        const dx = target.x - t.x;
+        const dy = target.y - t.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const step = Math.min(CHASE_SPEED_CAP, speed);
+        const nx = t.x + (dx / len) * step;
+        const ny = t.y + (dy / len) * step;
+        // đâm tường thì trượt theo từng trục để men quanh nhà
+        if (!tryMove(t, nx, ny) && !tryMove(t, nx, t.y)) tryMove(t, t.x, ny);
+        return;
       }
-      if (t.dx) {
-        t.x += t.dx;
-        if (t.x < 100 || t.x > 1400) t.dx *= -1;
+
+      // diagonal / patrol: bay theo vx/vy, chạm tường/biên thì đảo trục
+      let { vx = speed, vy = 0 } = t;
+      if (!tryMove(t, t.x + vx, t.y + vy)) {
+        if (tryMove(t, t.x - vx, t.y + vy)) vx = -vx;
+        else if (tryMove(t, t.x + vx, t.y - vy)) vy = -vy;
+        else { vx = -vx; vy = -vy; tryMove(t, t.x + vx, t.y + vy); }
       }
+      t.vx = vx;
+      t.vy = vy;
     });
   };
 

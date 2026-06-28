@@ -25,13 +25,19 @@ test("spawn zones are named and have positive dimensions", () => {
 });
 
 test("pickSpawnPoint returns a walkable point from preferred zones", () => {
-  // platform_gate center (0.5,0.5) → (1045, 490) — clear of all obstacles
+  // central_market_path center (0.5,0.5) → (640, 588) — giữa đại lộ, chắc chắn đi được
   const point = pickSpawnPoint({
-    preferredZones: ["platform_gate"],
+    preferredZones: ["central_market_path"],
     radius: 24,
     random: () => 0.5,
   });
 
-  assert.equal(point.zone, "platform_gate");
+  assert.equal(point.zone, "central_market_path");
+  assert.equal(checkMapCollisions(point.x, point.y, 24), false);
+});
+
+test("fallback point is walkable", () => {
+  // mọi lần thử trượt ra ngoài bản đồ → phải trả điểm fallback đi được
+  const point = pickSpawnPoint({ preferredZones: [], radius: 24, random: () => 1.1 });
   assert.equal(checkMapCollisions(point.x, point.y, 24), false);
 });

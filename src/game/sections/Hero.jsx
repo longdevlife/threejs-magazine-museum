@@ -41,7 +41,7 @@ export default function Hero() {
         />
 
         <img
-          src="/!!!!ảnh nền.png"
+          src="/hero-banner-group-5.png"
           alt="Revolution Background"
           className="gsap-parallax h-[100dvh] md:h-[110dvh] w-full md:w-[60%] object-cover object-center z-0 opacity-85 mix-blend-multiply"
           data-speed="0.15"
@@ -62,7 +62,7 @@ export default function Hero() {
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               <span className="w-2 h-2 rounded-full bg-[#C5A028]" />
-              GROUP 2
+              GROUP 5
             </span>
           </div>
 

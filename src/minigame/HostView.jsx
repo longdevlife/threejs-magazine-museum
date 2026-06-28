@@ -69,6 +69,12 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   const totalPlayers = playerList.length;
   const answeredCount = Object.keys(answers).length;
 
+  const handleKickPlayer = async (playerId) => {
+    if (window.confirm("Bạn có chắc chắn muốn kick người chơi này ra khỏi phòng?")) {
+      await remove(ref(db, `players/${playerId}`));
+    }
+  };
+
   // Bắt đầu game
   const handleStartGame = async () => {
     // Reset điểm số của tất cả người chơi về mặc định (Vốn 20 triệu, điểm 0)
@@ -217,8 +223,30 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
           ) : (
             <div className="player-grid">
               {playerList.map((p) => (
-                <div className="player-pill" key={p.id}>
-                  👤 {p.name}
+                <div className="player-pill" key={p.id} style={{ display: "inline-flex", alignItems: "center", gap: "8px", overflow: "visible" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>👤 {p.name}</span>
+                  <button 
+                    onClick={() => handleKickPlayer(p.id)}
+                    style={{
+                      background: "rgba(211, 47, 47, 0.2)",
+                      border: "1px solid #d32f2f",
+                      borderRadius: "50%",
+                      width: "18px",
+                      height: "18px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ff5252",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      padding: 0,
+                      lineHeight: 1
+                    }}
+                    title="Kick"
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
@@ -342,7 +370,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                     </div>
                     <div style={{ display: "flex", gap: "20px" }}>
                       <span style={{ color: "#8b8680" }}>
-                        Vốn: {player.capital.toLocaleString()}đ
+                        Vốn: {(player.capital ?? 0).toLocaleString()}đ
                       </span>
                       <span className="player-score-txt">{player.score}đ</span>
                     </div>
@@ -419,7 +447,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                     </div>
                     <div style={{ display: "flex", gap: "25px" }}>
                       <span style={{ color: "#8b8680" }}>
-                        Vốn cuối: {player.capital.toLocaleString()}đ
+                        Vốn cuối: {(player.capital ?? 0).toLocaleString()}đ
                       </span>
                       <span className="player-score-txt">{player.score}đ</span>
                     </div>

@@ -119,6 +119,12 @@ const RpgHostView = ({ gameState, dbConnected, onResetRole }) => {
   const playerList = Object.entries(players).map(([id, info]) => ({ id, ...info }));
   const totalPlayers = playerList.length;
 
+  const handleKickPlayer = async (playerId) => {
+    if (window.confirm("Bạn có chắc chắn muốn kick người chơi này ra khỏi phòng?")) {
+      await remove(ref(db, `players/${playerId}`));
+    }
+  };
+
   const handleStartGame = async () => {
     const updates = {};
     playerList.forEach((player) => {
@@ -229,8 +235,30 @@ const RpgHostView = ({ gameState, dbConnected, onResetRole }) => {
           ) : (
             <div className="player-grid">
               {playerList.map((p) => (
-                <div className="player-pill" key={p.id} style={{ background: "#ffffff", border: "1px solid #a16b47", color: "#333" }}>
-                  👤 {p.name}
+                <div className="player-pill" key={p.id} style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#ffffff", border: "1px solid #a16b47", color: "#333", overflow: "visible" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>👤 {p.name}</span>
+                  <button 
+                    onClick={() => handleKickPlayer(p.id)}
+                    style={{
+                      background: "rgba(211, 47, 47, 0.1)",
+                      border: "1px solid #d32f2f",
+                      borderRadius: "50%",
+                      width: "18px",
+                      height: "18px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#d32f2f",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      padding: 0,
+                      lineHeight: 1
+                    }}
+                    title="Kick"
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
@@ -276,7 +304,7 @@ const RpgHostView = ({ gameState, dbConnected, onResetRole }) => {
                         <span className="player-name-txt" style={{ fontSize: "1rem", color: "#333" }}>{player.name} {player.isBankrupt ? "💀" : ""}</span>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                        <span style={{ fontSize: "0.75rem", color: "#795548" }}>{player.capital.toLocaleString()}đ</span>
+                        <span style={{ fontSize: "0.75rem", color: "#795548" }}>{(player.capital ?? 0).toLocaleString()}đ</span>
                         <span className="player-score-txt" style={{ fontSize: "1rem", color: "#388e3c", fontWeight: "bold" }}>{player.score}đ</span>
                       </div>
                     </div>
@@ -341,7 +369,7 @@ const RpgHostView = ({ gameState, dbConnected, onResetRole }) => {
                     </div>
                     <div style={{ display: "flex", gap: "25px" }}>
                       <span style={{ color: "#795548" }}>
-                        Vốn cuối: {player.capital.toLocaleString()}đ
+                        Vốn cuối: {(player.capital ?? 0).toLocaleString()}đ
                       </span>
                       <span className="player-score-txt" style={{ color: "#388e3c", fontWeight: "bold" }}>{player.score}đ</span>
                     </div>

@@ -178,8 +178,8 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                 </span>
               </div>
               <div style={{ display: "flex", gap: "12px", fontSize: "0.85rem" }}>
-                <span style={{ color: p.capital <= 0 ? "var(--neon-red)" : "#8b8680" }}>{(p.capital || 0).toLocaleString()}đ</span>
-                <span className="player-score-txt">{p.score}đ</span>
+                <span className="pix-num" style={{ color: p.capital <= 0 ? "var(--neon-red)" : "#8b8680" }}>{(p.capital || 0).toLocaleString()}đ</span>
+                <span className="player-score-txt pix-num">{p.score}đ</span>
               </div>
             </div>
           ))}
@@ -244,7 +244,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                 <li>Phase 2 và 3 <b>khó hơn có chủ đích</b>: đó là cảm giác thị trường chuyển sang độc quyền</li>
               </ol>
               <div className="player-count" style={{ marginTop: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
-                Đã tham gia: <span style={{ fontFamily: "var(--font-mono)", fontWeight: "bold" }}>{totalPlayers}</span> người chơi
+                Đã tham gia: <span className="pix-num" style={{ fontFamily: "var(--font-mono)", fontWeight: "bold" }}>{totalPlayers}</span> người chơi
                 <div className="loading-dots"><span></span><span></span><span></span></div>
               </div>
               <button
@@ -277,7 +277,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
             <h2 style={{ fontSize: "1.2rem", fontWeight: "bold", color: "var(--neon-gold)", margin: 0, display: "inline-flex", alignItems: "center", gap: "6px" }}>
               {getPhaseIcon(gameState.status)} PHASE {gameState.status.replace("phase_", "")}: {currentConfig.name}
             </h2>
-            <span style={{ color: "#8b8680", fontSize: "0.85rem" }}>{totalPlayers} người chơi</span>
+            <span style={{ color: "#8b8680", fontSize: "0.85rem" }}><span className="pix-num">{totalPlayers}</span> người chơi</span>
           </div>
 
 
@@ -291,7 +291,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
           {currentConfig.platformFeeInterval > 0 && (
             <div style={{ background: "rgba(197,39,45,0.08)", border: "1px solid rgba(197,39,45,0.2)", borderRadius: "8px", padding: "8px 15px", marginBottom: "15px", fontSize: "0.85rem", color: "var(--neon-red)", display: "flex", alignItems: "center", gap: "6px" }}>
               <IconSkull className="w-4 h-4 flex-shrink-0" />
-              <span>PHÍ SÀN: Tự động trừ <b style={{ fontFamily: "var(--font-mono)" }}>{currentConfig.platformFeeAmount.toLocaleString()}đ</b> vốn mỗi <b style={{ fontFamily: "var(--font-mono)" }}>{currentConfig.platformFeeInterval / 1000}s</b></span>
+              <span>PHÍ SÀN: Tự động trừ <b className="pix-num" style={{ fontFamily: "var(--font-mono)" }}>{currentConfig.platformFeeAmount.toLocaleString()}đ</b> vốn mỗi <b className="pix-num" style={{ fontFamily: "var(--font-mono)" }}>{currentConfig.platformFeeInterval / 1000}s</b></span>
             </div>
           )}
 

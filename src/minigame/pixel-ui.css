@@ -9,6 +9,8 @@
 .podium-score {
   font-family: "Press Start 2P", var(--font-mono), monospace;
   letter-spacing: 0;
+  /* Press Start 2P rộng hơn ~1.5x — thu 0.7em để số dài (vốn 8 chữ số) không tràn cột. */
+  font-size: 0.7em;
 }
 
 /* Khung pixel: viền vuông dày, bóng cứng (không blur), nền phẳng. */

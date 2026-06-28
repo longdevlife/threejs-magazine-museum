@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ref, set, onValue, remove, update, get, runTransaction } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { situations, PHASE_CONFIGS } from "./situations";
-import { applyPlayerDelta } from "./gameStateUtils";
+import { applyPhaseOneGate, applyPlayerDelta } from "./gameStateUtils";
 import {
   IconPhone,
   IconDesktop,
@@ -104,6 +104,12 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   const totalPlayers = playerList.length;
   const currentConfig = PHASE_CONFIGS[gameState.status];
 
+  const marketEvents = [
+    { type: "flash_sale", label: "Tung Flash Sale", hint: "Cụm đơn hàng" },
+    { type: "review_wave", label: "Mở Review Wave", hint: "Cụm review" },
+    { type: "loyal_customer_drop", label: "Thả Khách Quen", hint: "Cụm khách riêng" },
+  ];
+
   // ===== ACTIONS =====
 
   const handleStartPhase = async (phaseKey) => {
@@ -116,8 +122,13 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
         updates[`players/${p.id}/capital`] = 20000000;
         updates[`players/${p.id}/streak`] = 0;
         updates[`players/${p.id}/isBankrupt`] = false;
+        updates[`players/${p.id}/progress`] = null;
+        updates[`players/${p.id}/eliminatedReason`] = null;
+        updates[`players/${p.id}/phaseOneQualified`] = null;
+        updates[`players/${p.id}/phaseOneBonusApplied`] = null;
       });
       await remove(ref(db, "votes"));
+      await remove(ref(db, "marketEvents"));
     }
 
     updates["gameState"] = {
@@ -134,8 +145,25 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     await update(ref(db), updates);
   };
 
-  const handleTriggerSituation = (sitNum) => {
-    set(ref(db, "gameState/status"), `situation_${sitNum}`);
+  const handleMarketEvent = async (eventType) => {
+    const id = `${Date.now()}_${eventType}`;
+    await set(ref(db, `marketEvents/${id}`), {
+      type: eventType,
+      phase: gameState.status,
+      createdAt: Date.now(),
+    });
+  };
+
+  const handleTriggerSituation = async (sitNum) => {
+    if (sitNum === 1) {
+      const updates = {};
+      playerList.forEach((p) => {
+        const { id, ...playerData } = p;
+        updates[`players/${id}`] = applyPhaseOneGate(playerData);
+      });
+      await update(ref(db), updates);
+    }
+    await set(ref(db, "gameState/status"), `situation_${sitNum}`);
   };
 
   const handleFinishGame = () => {
@@ -146,6 +174,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     await remove(ref(db, "votes"));
     await remove(ref(db, "books"));
     await remove(ref(db, "traps"));
+    await remove(ref(db, "marketEvents"));
     await remove(ref(db, "players"));
     await set(ref(db, "gameState"), { status: "waiting" });
   };
@@ -320,6 +349,25 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
               <Leaderboard />
 
               <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div className="mission-card" style={{ marginTop: "0", textAlign: "left" }}>
+                  <div className="mission-label">SỰ KIỆN THỊ TRƯỜNG</div>
+                  <div style={{ display: "grid", gap: "8px", marginTop: "10px" }}>
+                    {marketEvents.map((event) => (
+                      <button
+                        key={event.type}
+                        className="btn-cyber btn-cyber-blue"
+                        style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "8px", fontSize: "0.78rem" }}
+                        onClick={() => handleMarketEvent(event.type)}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                          <IconBook className="w-4 h-4 text-amber-400" /> {event.label}
+                        </span>
+                        <span style={{ color: "#8b8680", fontSize: "0.68rem" }}>{event.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {currentConfig.recap && (
                   <div className="mission-card" style={{ marginTop: "0", textAlign: "left" }}>
                     <div className="mission-label">MC CHỐT Ý</div>

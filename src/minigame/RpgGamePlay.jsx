@@ -40,6 +40,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
   // Trạng thái đóng băng
   const [isFrozen, setIsFrozen] = useState(false);
   const [freezeTime, setFreezeTime] = useState(0);
+  const freezeTimeoutRef = useRef(null);
 
   // Floating text
   const [floatingTexts, setFloatingTexts] = useState([]);
@@ -140,9 +141,15 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         const freezeSeconds = Math.ceil((hazard.durationMs || 3000) / 1000);
 
         if (shouldFreeze) {
+          if (freezeTimeoutRef.current) clearTimeout(freezeTimeoutRef.current);
           setIsFrozen(true);
           setFreezeTime(freezeSeconds);
           iframeRef.current?.contentWindow?.postMessage({ type: "FREEZE" }, "*");
+          freezeTimeoutRef.current = setTimeout(() => {
+            setIsFrozen(false);
+            setFreezeTime(0);
+            iframeRef.current?.contentWindow?.postMessage({ type: "UNFREEZE" }, "*");
+          }, hazard.durationMs || 3000);
         }
 
         const penScore = Number.isFinite(hazard.score)
@@ -164,22 +171,19 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
 
   // 2. Bộ đếm ngược đóng băng
   useEffect(() => {
-    let timer;
-    if (isFrozen && freezeTime > 0) {
-      timer = setInterval(() => {
-        setFreezeTime((prev) => {
-          if (prev <= 1) {
-            setIsFrozen(false);
-            iframeRef.current?.contentWindow?.postMessage({ type: "UNFREEZE" }, "*");
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    if (!isFrozen) return undefined;
+    const timer = setInterval(() => {
+      setFreezeTime((prev) => Math.max(0, prev - 1));
+    }, 1000);
     return () => clearInterval(timer);
-  }, [isFrozen, freezeTime]);
+  }, [isFrozen]);
+
+  useEffect(() => {
+    return () => {
+      if (freezeTimeoutRef.current) clearTimeout(freezeTimeoutRef.current);
+      iframeRef.current?.contentWindow?.postMessage({ type: "UNFREEZE" }, "*");
+    };
+  }, [gameState.status]);
 
   // 3. Hiện thông báo phí sàn khi bị trừ tự động (qua Firebase onValue)
   const lastCapitalRef = useRef(playerInfo.capital);

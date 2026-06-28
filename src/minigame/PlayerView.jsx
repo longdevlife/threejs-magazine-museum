@@ -212,6 +212,24 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
 
   // ===== 3. RPG PHASE (1/2/3) — Chơi game RPG =====
   if (isRpgPhase) {
+    if (playerInfo.isBankrupt) {
+      return (
+        <div className="minigame-panel" style={{ maxWidth: "480px", textAlign: "center" }}>
+          <IconSkull className="w-16 h-16 mx-auto text-red-500 animate-pulse" />
+          <h2 className="minigame-title" style={{ fontSize: "1.6rem" }}>SHOP ĐÃ BỊ LOẠI</h2>
+          <p className="minigame-subtitle" style={{ lineHeight: "1.6" }}>
+            {playerInfo.eliminatedReason || "Bạn đã cạn vốn trong cuộc cạnh tranh nền tảng."}
+          </p>
+          <div className="mission-card" style={{ textAlign: "left", marginTop: "20px" }}>
+            <div className="mission-label">BÀI HỌC NHANH</div>
+            <div className="mission-text">
+              Khi không tích lũy đủ đơn hàng và vốn ban đầu, shop nhỏ rất dễ bị cuốn khỏi thị trường khi luật chơi bắt đầu nghiêng về nền tảng lớn.
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <RpgGamePlay
         playerId={playerId}

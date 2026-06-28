@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  applyPhaseOneGate,
   applyPlayerDelta,
   isValidGameStatus,
   normalizeGameState,
@@ -38,5 +39,64 @@ test("applyPlayerDelta keeps bankruptcy sticky after later gains", () => {
     score: 20,
     capital: 300_000,
     isBankrupt: true,
+  });
+});
+
+test("applyPhaseOneGate eliminates players below the phase 1 order floor", () => {
+  const player = {
+    name: "Chi",
+    score: 80,
+    capital: 12_000_000,
+    progress: { phase_1: { order: 2 } },
+    isBankrupt: false,
+  };
+
+  assert.deepEqual(applyPhaseOneGate(player), {
+    name: "Chi",
+    score: 80,
+    capital: 0,
+    progress: { phase_1: { order: 2 } },
+    isBankrupt: true,
+    eliminatedReason: "Không đạt tối thiểu 3 đơn hàng ở Phase 1",
+    phaseOneQualified: false,
+  });
+});
+
+test("applyPhaseOneGate keeps mid performers alive without a bonus", () => {
+  const player = {
+    name: "Dung",
+    score: 100,
+    capital: 14_000_000,
+    progress: { phase_1: { order: 4 } },
+    isBankrupt: false,
+  };
+
+  assert.deepEqual(applyPhaseOneGate(player), {
+    name: "Dung",
+    score: 100,
+    capital: 14_000_000,
+    progress: { phase_1: { order: 4 } },
+    isBankrupt: false,
+    phaseOneQualified: false,
+  });
+});
+
+test("applyPhaseOneGate rewards players who reach 5 phase 1 orders", () => {
+  const player = {
+    name: "Hai",
+    score: 125,
+    capital: 16_000_000,
+    progress: { phase_1: { order: 5 } },
+    isBankrupt: false,
+  };
+
+  assert.deepEqual(applyPhaseOneGate(player), {
+    name: "Hai",
+    score: 175,
+    capital: 17_000_000,
+    progress: { phase_1: { order: 5 } },
+    isBankrupt: false,
+    phaseOneQualified: true,
+    phaseOneBonusApplied: true,
   });
 });

@@ -81,33 +81,50 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
       if (didClaim) {
         await remove(ref(db, `books/${bookId}`));
       }
-      return didClaim;
+      return didClaim ? claimedBook : null;
     };
 
     const handleMessage = async (e) => {
       if (!e.data) return;
 
-      // A. Nhặt sách tri thức → Bonus theo phase config
+      // A. Nhặt cơ hội kinh doanh → Bonus theo object type
       if (e.data.type === "NHAT_SACH") {
-        const didClaim = await claimBook(e.data.bookId);
-        if (!didClaim) return;
+        const claimedBook = await claimBook(e.data.bookId);
+        if (!claimedBook) return;
 
-        const { score: bonusScore, capital: bonusCapital } = phaseConfig.bookReward;
+        const opportunity = e.data.opportunity || {};
+        const bonusScore = Number.isFinite(claimedBook.score)
+          ? claimedBook.score
+          : phaseConfig.bookReward.score;
+        const bonusCapital = Number.isFinite(claimedBook.capital)
+          ? claimedBook.capital
+          : phaseConfig.bookReward.capital;
+
         await applyScoreCapitalDelta({ score: bonusScore, capital: bonusCapital });
-
-        addFloatingText(`+${bonusScore}đ Sách`, "#2e7d32");
+        addFloatingText(claimedBook.message || `+${bonusScore}đ Cơ hội`, claimedBook.color || "#2e7d32");
       }
 
-      // B. Va chạm bẫy → Phạt theo phase config
+      // B. Va chạm rủi ro nền tảng → Phạt theo hazard type
       if (e.data.type === "DINH_BAY") {
-        setIsFrozen(true);
-        setFreezeTime(3);
-        iframeRef.current?.contentWindow?.postMessage({ type: "FREEZE" }, "*");
+        const hazard = e.data.hazard || {};
+        const shouldFreeze = hazard.effect === "freeze" || !hazard.effect;
+        const freezeSeconds = Math.ceil((hazard.durationMs || 3000) / 1000);
 
-        const { score: penScore, capital: penCapital } = phaseConfig.trapPenalty;
+        if (shouldFreeze) {
+          setIsFrozen(true);
+          setFreezeTime(freezeSeconds);
+          iframeRef.current?.contentWindow?.postMessage({ type: "FREEZE" }, "*");
+        }
+
+        const penScore = Number.isFinite(hazard.score)
+          ? hazard.score
+          : phaseConfig.trapPenalty.score;
+        const penCapital = Number.isFinite(hazard.capital)
+          ? hazard.capital
+          : phaseConfig.trapPenalty.capital;
+
         await applyScoreCapitalDelta({ score: penScore, capital: penCapital });
-
-        addFloatingText(`${penScore}đ Bẫy`, "#c5272d");
+        addFloatingText(hazard.message || `${penScore}đ Rủi ro`, hazard.color || "#c5272d");
       }
     };
 
@@ -265,9 +282,9 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
       <div style={{ color: "#8b8680", fontSize: "0.75rem", marginTop: "10px", textAlign: "center", display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
         <span>Điều khiển: WASD / Mũi tên</span>
         <span>•</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}><IconBook className="w-3.5 h-3.5 text-amber-500" /> Nhặt sách = +{phaseConfig.bookReward.score}đ</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}><IconBook className="w-3.5 h-3.5 text-amber-500" /> Nhặt cơ hội</span>
         <span>•</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}><IconBolt className="w-3.5 h-3.5 text-red-500" /> Né bẫy sét!</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}><IconBolt className="w-3.5 h-3.5 text-red-500" /> Né rủi ro nền tảng</span>
       </div>
 
       {/* D-pad */}

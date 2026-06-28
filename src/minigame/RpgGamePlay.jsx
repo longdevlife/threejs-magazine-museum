@@ -43,9 +43,26 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
 
   // Floating text
   const [floatingTexts, setFloatingTexts] = useState([]);
+  const [nowMs, setNowMs] = useState(Date.now());
 
   // Lấy config phase hiện tại
   const phaseConfig = PHASE_CONFIGS[gameState.status] || PHASE_CONFIGS.phase_1;
+  const activeMission = gameState.mission || phaseConfig.mission;
+  const activeMeaning = gameState.learningMeaning || phaseConfig.learningMeaning;
+  const progressGoals = gameState.progressGoals || phaseConfig.progressGoals || [];
+  const phaseProgress = playerInfo.progress?.[gameState.status] || {};
+  const elapsedSeconds = gameState.phaseStartedAt
+    ? Math.max(0, Math.floor((nowMs - gameState.phaseStartedAt) / 1000))
+    : 0;
+
+  const progressText = progressGoals
+    .map((goal) => {
+      const current = goal.type === "survive_seconds"
+        ? Math.min(goal.target, elapsedSeconds)
+        : Math.min(goal.target, Number(phaseProgress[goal.type]) || 0);
+      return `${goal.label}: ${current}/${goal.target}`;
+    })
+    .join(" | ");
 
   const incrementProgress = (type) =>
     runTransaction(
@@ -61,6 +78,11 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
       setFloatingTexts((prev) => prev.filter((t) => t.id !== id));
     }, 1500);
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 1. Lắng nghe postMessage từ Phaser
   useEffect(() => {
@@ -235,6 +257,15 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         <div style={{ width: "100%", background: "rgba(197,39,45,0.08)", border: "1px solid rgba(197,39,45,0.15)", borderRadius: "10px", padding: "8px 12px", marginBottom: "10px", fontSize: "0.75rem", color: "#ff6b35", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
           <IconSkull className="w-4 h-4 text-red-500 animate-pulse" />
           <span>Hệ quả Độc quyền (Phí sàn): <b>-{(phaseConfig.platformFeeAmount / 1000000).toFixed(0)} triệu</b> vốn mỗi <b>{phaseConfig.platformFeeInterval / 1000}s</b></span>
+        </div>
+      )}
+
+      {activeMission && (
+        <div className="mission-card">
+          <div className="mission-label">NHIỆM VỤ PHASE</div>
+          <div className="mission-text">{activeMission}</div>
+          {progressText && <div className="mission-progress pix-num">{progressText}</div>}
+          {activeMeaning && <div className="mission-meaning">{activeMeaning}</div>}
         </div>
       )}
 

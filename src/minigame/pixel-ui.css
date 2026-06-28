@@ -75,3 +75,34 @@
 .lobby-waiting img {
   image-rendering: pixelated;
 }
+
+.mission-card {
+  width: 100%;
+  border: 3px solid #000;
+  background: #fff6d7;
+  color: #2c1a0e;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.45);
+}
+.mission-label {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--neon-red);
+  text-transform: uppercase;
+}
+.mission-text {
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+.mission-progress {
+  margin-top: 6px;
+  color: #1565c0;
+}
+.mission-meaning {
+  margin-top: 6px;
+  color: #5c544a;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}

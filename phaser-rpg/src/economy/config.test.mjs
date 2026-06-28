@@ -81,12 +81,10 @@ test('phase progress goals are explicit and readable', () => {
     { type: 'review', target: 2, label: 'Review' },
   ]);
   assert.deepEqual(PHASE_ECONOMY_MIX.phase_2.progressGoals, [
-    { type: 'survive_seconds', target: 60, label: 'Song sot' },
-    { type: 'loyal_customer', target: 3, label: 'Khach quen' },
+    { type: 'loyal_customer_found', target: 1, label: 'Khach ruot' },
   ]);
   assert.deepEqual(PHASE_ECONOMY_MIX.phase_3.progressGoals, [
-    { type: 'niche_market', target: 2, label: 'Ngach' },
-    { type: 'loyal_customer', target: 3, label: 'Khach rieng' },
+    { type: 'escaped_gate', target: 1, label: 'Cong thoat' },
   ]);
 });
 

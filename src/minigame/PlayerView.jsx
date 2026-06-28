@@ -230,6 +230,25 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
       );
     }
 
+    // Player đã thoát qua Cổng Thoát (Phase 3)
+    if (playerInfo.escaped && gameState.status === "phase_3") {
+      return (
+        <div className="minigame-panel player-panel-sm" style={{ textAlign: "center" }}>
+          <IconTrophy className="w-16 h-16 mx-auto text-yellow-500 animate-bounce" />
+          <h2 className="minigame-title" style={{ fontSize: "1.6rem" }}>ĐÃ THOÁT KHỎI NỀN TẢNG!</h2>
+          <p className="minigame-subtitle" style={{ lineHeight: "1.6" }}>
+            Bạn đã xây dựng kênh riêng và thoát khỏi sự phụ thuộc nền tảng. Chờ MC công bố kết quả!
+          </p>
+          <div className="mission-card" style={{ textAlign: "left", marginTop: "20px" }}>
+            <div className="mission-label">BÀI HỌC</div>
+            <div className="mission-text">
+              Cổng Thoát đại diện cho việc xây kênh riêng, khách hàng riêng, và năng lực độc lập. Đây là con đường bền vững thay vì tiếp tục phụ thuộc nền tảng.
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <RpgGamePlay
         playerId={playerId}

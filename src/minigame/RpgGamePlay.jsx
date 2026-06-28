@@ -56,6 +56,11 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
     ? Math.max(0, Math.floor((nowMs - gameState.phaseStartedAt) / 1000))
     : 0;
 
+  // Phase 2 countdown (60 giây)
+  const phaseCountdown = gameState.phaseEndsAt
+    ? Math.max(0, Math.ceil((gameState.phaseEndsAt - nowMs) / 1000))
+    : null;
+
   const progressText = progressGoals
     .map((goal) => {
       const current = goal.type === "survive_seconds"
@@ -162,6 +167,32 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         await applyScoreCapitalDelta({ score: penScore, capital: penCapital });
         await incrementProgress(`hit_${hazard.type || "hazard"}`);
         addFloatingText(hazard.message || `${penScore}đ Rủi ro`, hazard.color || "#c5272d");
+      }
+
+      // C. Tìm thấy Khách Ruột (Phase 2 NPC) — NPC vẫn ở đó cho người khác tìm
+      if (e.data.type === "FOUND_LOYAL_CUSTOMER") {
+        await incrementProgress("loyal_customer_found");
+        await runTransaction(
+          ref(db, `players/${playerId}/progress/${gameState.status}/loyal_customer_found_at`),
+          (current) => current || Date.now(),
+          { applyLocally: false }
+        );
+        addFloatingText("🎉 Tìm thấy Khách Ruột!", "#00897b");
+      }
+
+      // D. Thoát qua Cổng Thoát (Phase 3)
+      if (e.data.type === "ESCAPED_GATE") {
+        await incrementProgress("escaped_gate");
+        await runTransaction(
+          ref(db, `players/${playerId}`),
+          (player) => ({
+            ...player,
+            escaped: true,
+            escapedAt: player?.escapedAt || Date.now(),
+          }),
+          { applyLocally: false }
+        );
+        addFloatingText("Đã thoát khỏi nền tảng!", "#c9922a");
       }
     };
 
@@ -270,6 +301,30 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
           <div className="mission-text">{activeMission}</div>
           {progressText && <div className="mission-progress pix-num">{progressText}</div>}
           {activeMeaning && <div className="mission-meaning">{activeMeaning}</div>}
+        </div>
+      )}
+
+      {/* Countdown Phase 2 - 60 giây */}
+      {phaseCountdown !== null && gameState.status === "phase_2" && (
+        <div style={{ width: "100%", background: phaseCountdown <= 10 ? "rgba(197,39,45,0.15)" : "rgba(0,137,123,0.08)", border: `2px solid ${phaseCountdown <= 10 ? "rgba(197,39,45,0.4)" : "rgba(0,137,123,0.2)"}`, borderRadius: "12px", padding: "10px 16px", marginBottom: "10px", textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+            <IconTimer className={`w-5 h-5 ${phaseCountdown <= 10 ? "text-red-500 animate-pulse" : "text-teal-500"}`} />
+            <span style={{ fontSize: "1.2rem", fontWeight: "800", fontFamily: "var(--font-mono)", color: phaseCountdown <= 10 ? "#c5272d" : "#00897b" }}>
+              {phaseCountdown > 0 ? `${phaseCountdown}s` : "HẾT GIỜ!"}
+            </span>
+            <span style={{ fontSize: "0.75rem", color: "#8b8680" }}>Tìm Khách Ruột</span>
+          </div>
+          <div style={{ width: "100%", height: "4px", background: "rgba(0,0,0,0.2)", borderRadius: "2px", marginTop: "6px", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${Math.min(100, (phaseCountdown / 60) * 100)}%`, background: phaseCountdown <= 10 ? "#c5272d" : "#00897b", transition: "width 1s linear", borderRadius: "2px" }} />
+          </div>
+        </div>
+      )}
+
+      {/* Hint Khách Ruột từ Host */}
+      {gameState.phase2Hint && gameState.status === "phase_2" && (
+        <div style={{ width: "100%", background: "rgba(0,137,123,0.06)", border: "1px solid rgba(0,137,123,0.15)", borderRadius: "10px", padding: "8px 14px", marginBottom: "10px", fontSize: "0.82rem", color: "#00897b", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+          <IconBulb className="w-4 h-4 text-teal-500" />
+          <span>💡 Manh mối: <b>{gameState.phase2Hint}</b></span>
         </div>
       )}
 

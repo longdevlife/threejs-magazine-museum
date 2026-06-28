@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   applyPhaseOneGate,
+  applyPhaseTwoGate,
   applyPlayerDelta,
   isValidGameStatus,
   normalizeGameState,
@@ -42,61 +43,104 @@ test("applyPlayerDelta keeps bankruptcy sticky after later gains", () => {
   });
 });
 
-test("applyPhaseOneGate eliminates players below the phase 1 order floor", () => {
+// === Phase 1 hard gate: require 5 orders AND 2 reviews ===
+
+test("applyPhaseOneGate eliminates players missing reviews even with enough orders", () => {
+  const player = {
+    name: "An",
+    score: 100,
+    capital: 10_000_000,
+    progress: { phase_1: { order: 5, review: 1 } },
+    isBankrupt: false,
+  };
+
+  const result = applyPhaseOneGate(player);
+  assert.equal(result.isBankrupt, true);
+  assert.equal(result.eliminatedReason, "Không đạt 5 đơn hàng và 2 review ở Phase 1");
+});
+
+test("applyPhaseOneGate eliminates players missing orders even with enough reviews", () => {
+  const player = {
+    name: "Binh",
+    score: 100,
+    capital: 10_000_000,
+    progress: { phase_1: { order: 4, review: 3 } },
+    isBankrupt: false,
+  };
+
+  const result = applyPhaseOneGate(player);
+  assert.equal(result.isBankrupt, true);
+  assert.equal(result.eliminatedReason, "Không đạt 5 đơn hàng và 2 review ở Phase 1");
+});
+
+test("applyPhaseOneGate qualifies players with 5 orders and 2 reviews", () => {
   const player = {
     name: "Chi",
-    score: 80,
+    score: 120,
     capital: 12_000_000,
-    progress: { phase_1: { order: 2 } },
+    progress: { phase_1: { order: 5, review: 2 } },
     isBankrupt: false,
   };
 
-  assert.deepEqual(applyPhaseOneGate(player), {
-    name: "Chi",
+  const result = applyPhaseOneGate(player);
+  assert.equal(result.isBankrupt, false);
+  assert.equal(result.phaseOneQualified, true);
+});
+
+test("applyPhaseOneGate eliminates players with zero progress", () => {
+  const player = {
+    name: "Dung",
+    score: 50,
+    capital: 5_000_000,
+    progress: {},
+    isBankrupt: false,
+  };
+
+  const result = applyPhaseOneGate(player);
+  assert.equal(result.isBankrupt, true);
+  assert.equal(result.eliminatedReason, "Không đạt 5 đơn hàng và 2 review ở Phase 1");
+});
+
+// === Phase 2 gate: loyal customer ===
+
+test("applyPhaseTwoGate eliminates players who do not find the loyal customer", () => {
+  const player = {
+    name: "Em",
     score: 80,
-    capital: 0,
-    progress: { phase_1: { order: 2 } },
-    isBankrupt: true,
-    eliminatedReason: "Không đạt tối thiểu 3 đơn hàng ở Phase 1",
-    phaseOneQualified: false,
-  });
-});
-
-test("applyPhaseOneGate keeps mid performers alive without a bonus", () => {
-  const player = {
-    name: "Dung",
-    score: 100,
-    capital: 14_000_000,
-    progress: { phase_1: { order: 4 } },
+    capital: 8_000_000,
+    progress: { phase_2: {} },
     isBankrupt: false,
   };
 
-  assert.deepEqual(applyPhaseOneGate(player), {
-    name: "Dung",
-    score: 100,
-    capital: 14_000_000,
-    progress: { phase_1: { order: 4 } },
-    isBankrupt: false,
-    phaseOneQualified: false,
-  });
+  const result = applyPhaseTwoGate(player);
+  assert.equal(result.isBankrupt, true);
+  assert.equal(result.eliminatedReason, "Không tìm được khách ruột trong 60 giây");
+  assert.equal(result.phaseTwoQualified, false);
 });
 
-test("applyPhaseOneGate rewards players who reach 5 phase 1 orders", () => {
+test("applyPhaseTwoGate qualifies players who find the loyal customer", () => {
   const player = {
-    name: "Hai",
-    score: 125,
-    capital: 16_000_000,
-    progress: { phase_1: { order: 5 } },
+    name: "Phuc",
+    score: 90,
+    capital: 9_000_000,
+    progress: { phase_2: { loyal_customer_found: 1 } },
     isBankrupt: false,
   };
 
-  assert.deepEqual(applyPhaseOneGate(player), {
-    name: "Hai",
-    score: 175,
-    capital: 17_000_000,
-    progress: { phase_1: { order: 5 } },
+  const result = applyPhaseTwoGate(player);
+  assert.equal(result.isBankrupt, false);
+  assert.equal(result.phaseTwoQualified, true);
+});
+
+test("applyPhaseTwoGate handles null progress gracefully", () => {
+  const player = {
+    name: "Giang",
+    score: 50,
+    capital: 5_000_000,
     isBankrupt: false,
-    phaseOneQualified: true,
-    phaseOneBonusApplied: true,
-  });
+  };
+
+  const result = applyPhaseTwoGate(player);
+  assert.equal(result.isBankrupt, true);
+  assert.equal(result.phaseTwoQualified, false);
 });

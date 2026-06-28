@@ -25,8 +25,8 @@ export function MuseumArtwork({ panel, focused, onSelect }) {
   }, []);
 
   const isLandscape = panel.imageSrc && panel.imageSrc.includes("ngang");
-  const w = isLandscape ? 2.6 : 1.8;
-  const h = isLandscape ? 1.8 : 2.4;
+  const w = panel.w !== undefined ? panel.w : (isLandscape ? 2.6 : 1.8);
+  const h = panel.h !== undefined ? panel.h : (isLandscape ? 1.8 : 2.4);
 
   return (
     <group

@@ -150,7 +150,7 @@ export const MARKET_EVENTS = {
 
 export const PHASE_ECONOMY_MIX = {
   phase_1: {
-    mission: 'Kiếm 5 đơn hàng và 2 review tốt trước khi sàn đổi luật.',
+    mission: 'Kiếm đủ 5 đơn hàng và 2 review. Thiếu một trong hai sẽ bị loại.',
     learningMeaning:
       'Cơ hội còn mở. Shop nhỏ vẫn có đất sống trong giai đoạn cạnh tranh tự do.',
     recap:
@@ -177,15 +177,13 @@ export const PHASE_ECONOMY_MIX = {
     ],
   },
   phase_2: {
-    mission:
-      'Sống sót 60 giây khi phí sàn tự trừ. Tìm khách quen để bớt lệ thuộc vào thuật toán.',
+    mission: 'Tìm Khách Ruột đang ẩn trên bản đồ trong 60 giây.',
     learningMeaning:
-      'Khi nền tảng nắm quyền, shop nhỏ không làm sai vẫn mất tiền vì luật chơi bị áp đặt.',
+      'Khi nền tảng nắm quyền, shop nhỏ không làm sai vẫn mất tiền vì luật chơi bị áp đặt. Khách ruột là tài sản sống còn.',
     recap:
-      'Bạn vừa thấy quyền lực nền tảng: phí sàn, voucher và thuật toán làm shop nhỏ mất lợi nhuận dù vẫn có đơn hàng.',
+      'Bạn vừa thấy quyền lực nền tảng: phí sàn, voucher và thuật toán làm shop nhỏ mất lợi nhuận. Khách ruột và quan hệ trực tiếp là cách sống sót.',
     progressGoals: [
-      { type: 'survive_seconds', target: 60, label: 'Song sot' },
-      { type: 'loyal_customer', target: 3, label: 'Khach quen' },
+      { type: 'loyal_customer_found', target: 1, label: 'Khach ruot' },
     ],
     maxOpportunities: 6,
     hazardCount: 4,
@@ -206,16 +204,12 @@ export const PHASE_ECONOMY_MIX = {
     ],
   },
   phase_3: {
-    mission:
-      'Đừng đối đầu trực diện. Chạy tới Thị trường ngách và giữ khách riêng để sống sót.',
+    mission: 'Chạy tới Cổng Thoát để rời khỏi sự phụ thuộc nền tảng.',
     learningMeaning:
-      'Đối đầu đốt tiền với độc quyền rất dễ cạn vốn. Shop nhỏ phải khác biệt hóa, giữ khách riêng, và nâng kỹ năng.',
+      'Đối đầu đốt tiền với độc quyền rất dễ cạn vốn. Cổng thoát đại diện cho việc xây kênh riêng, khách hàng riêng, và năng lực độc lập ngoài nền tảng.',
     recap:
-      'Bạn vừa thấy cạnh tranh trong độc quyền: đối đầu trực diện với Mall rất khó, con đường sống sót là thị trường ngách, khách riêng và nâng kỹ năng.',
-    progressGoals: [
-      { type: 'niche_market', target: 2, label: 'Ngach' },
-      { type: 'loyal_customer', target: 3, label: 'Khach rieng' },
-    ],
+      'Bạn vừa thấy cạnh tranh trong độc quyền: tiếp tục phụ thuộc nền tảng không phải chiến lược bền vững. Cổng thoát là xây kênh riêng, khách riêng và năng lực độc lập.',
+    progressGoals: [{ type: 'escaped_gate', target: 1, label: 'Cong thoat' }],
     maxOpportunities: 4,
     hazardCount: 6,
     hazardSpeed: 2.6,

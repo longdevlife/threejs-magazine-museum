@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ref, set, onValue, remove, update, get, runTransaction } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { situations, PHASE_CONFIGS } from "./situations";
-import { applyPhaseOneGate, applyPlayerDelta } from "./gameStateUtils";
+import { applyPhaseOneGate, applyPhaseTwoGate, applyPlayerDelta } from "./gameStateUtils";
 import {
   IconPhone,
   IconDesktop,
@@ -125,6 +125,11 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     { type: "loyal_customer_drop", label: "Thả Khách Quen", hint: "Cụm khách riêng" },
   ];
 
+  const phase2Events = [
+    { type: "spawn_loyal_customer_npc", label: "Spawn Khách Ruột", hint: "NPC ẩn trên bản đồ" },
+    { type: "loyal_customer_hint", label: "Thả Manh Mối", hint: "Gợi ý vị trí" },
+  ];
+
   // ===== ACTIONS =====
 
   const handleStartPhase = async (phaseKey) => {
@@ -141,12 +146,27 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
         playerUpdates[`${p.id}/eliminatedReason`] = null;
         playerUpdates[`${p.id}/phaseOneQualified`] = null;
         playerUpdates[`${p.id}/phaseOneBonusApplied`] = null;
+        playerUpdates[`${p.id}/phaseTwoQualified`] = null;
+        playerUpdates[`${p.id}/escaped`] = null;
+        playerUpdates[`${p.id}/escapedAt`] = null;
       });
       if (Object.keys(playerUpdates).length > 0) {
         await update(ref(db, "players"), playerUpdates);
       }
       await remove(ref(db, "votes"));
       await remove(ref(db, "marketEvents"));
+    }
+
+    // Phase 3: clear escaped flag cho tất cả player còn sống
+    if (phaseKey === "phase_3") {
+      const playerUpdates = {};
+      playerList.forEach((p) => {
+        playerUpdates[`${p.id}/escaped`] = null;
+        playerUpdates[`${p.id}/escapedAt`] = null;
+      });
+      if (Object.keys(playerUpdates).length > 0) {
+        await update(ref(db, "players"), playerUpdates);
+      }
     }
 
     const gameStateData = {
@@ -159,6 +179,11 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
       recap: config.recap,
       progressGoals: config.progressGoals,
     };
+
+    // Phase 2: set 60s timer
+    if (phaseKey === "phase_2") {
+      gameStateData.phaseEndsAt = Date.now() + 60_000;
+    }
 
     await set(ref(db, "gameState"), gameStateData);
   };
@@ -183,6 +208,25 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
         await update(ref(db, "players"), updates);
       }
     }
+    if (sitNum === 2) {
+      const updates = {};
+      let qualifiedCount = 0;
+      playerList.forEach((p) => {
+        if (p.isBankrupt) return; // already eliminated
+        const { id, ...playerData } = p;
+        const result = applyPhaseTwoGate(playerData);
+        updates[`${id}`] = result;
+        if (result.phaseTwoQualified) qualifiedCount++;
+      });
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db, "players"), updates);
+      }
+      if (qualifiedCount === 0) {
+        await set(ref(db, "gameState/wipeoutReason"), "Không ai tìm được khách ruột trong 60 giây");
+      }
+      // Clear NPC state
+      await remove(ref(db, "npcs"));
+    }
     await set(ref(db, "gameState/status"), `situation_${sitNum}`);
   };
 
@@ -203,6 +247,8 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     await remove(ref(db, "traps"));
     await remove(ref(db, "marketEvents"));
     await remove(ref(db, "players"));
+    await remove(ref(db, "npcs"));
+    await remove(ref(db, "gates"));
   };
 
   // Vote stats
@@ -450,6 +496,28 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                 ))}
               </div>
             </div>
+
+            {/* Phase 2: NPC & Hint controls */}
+            {gameState.status === "phase_2" && (
+              <div className="dashboard-widget" style={{ background: "rgba(0,137,123,0.04)", border: "1px solid rgba(0,137,123,0.12)", borderRadius: "14px", padding: "16px" }}>
+                <h4 style={{ fontSize: "0.8rem", color: "#00897b", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px 0" }}>Phase 2: Khách Ruột</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {phase2Events.map((event) => (
+                    <button
+                      key={event.type}
+                      className="btn-market-flat"
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "10px 14px", borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(0,137,123,0.15)", background: "rgba(0,137,123,0.06)", width: "100%" }}
+                      onClick={() => handleMarketEvent(event.type)}
+                    >
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "bold", fontSize: "0.8rem", color: "#00897b" }}>
+                        <IconUser className="w-4 h-4" /> {event.label}
+                      </span>
+                      <span style={{ color: "#8b8680", fontSize: "0.7rem" }}>{event.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* MC Chốt ý & Chuyển Phase */}
             <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>

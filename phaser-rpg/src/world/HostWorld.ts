@@ -26,6 +26,13 @@ const BOOK_MS = 400; // nhịp kiểm tra/bù sách
 const TRAP_TELEGRAPH_MS = 1200;
 const TRAP_HITBOX_SCALE = 0.65;
 const TRAP_IMMUNITY_MS = 5500;
+const GATE_ACTIVATION_DELAY = 3000;
+
+const HINT_MESSAGES = [
+  'Khách quen đang ở sau dãy shop nhỏ phía bên trái',
+  'Có ai đó đang đợi bạn ở góc dưới bên phải bản đồ',
+  'Có bóng dáng ai đó ở góc khuất trung tâm thương mại',
+];
 
 // ponytail: narrow casts so tsc can index PHASE_ECONOMY_MIX by string key without `any`.
 type PhaseMix = (typeof PHASE_ECONOMY_MIX)[keyof typeof PHASE_ECONOMY_MIX];
@@ -101,7 +108,63 @@ export class HostWorld {
     });
   }
 
-  // Đi được nếu tâm + 4 điểm biên (±radius) đều không trúng ô có collides.
+  // Kiểm tra xem tọa độ mục tiêu có thể đi tới được từ Spawn Point của người chơi hay không (thuật toán BFS trên lưới tile)
+  public isReachable(targetX: number, targetY: number): boolean {
+    const scene = this.scene as Phaser.Scene & {
+      tilemap?: Phaser.Tilemaps.Tilemap;
+      player?: { x: number; y: number };
+    };
+    const tilemap = scene.tilemap;
+    const player = scene.player;
+    if (!tilemap) return true; // Fallback nếu không có tilemap
+
+    // Điểm xuất phát của player (Host player luôn đứng yên ở Spawn Point)
+    const startTx = player ? Math.floor(player.x / 32) : 4; // fallback x = 128px
+    const startTy = player ? Math.floor(player.y / 32) : 18; // fallback y = 592px
+    const targetTx = Math.floor(targetX / 32);
+    const targetTy = Math.floor(targetY / 32);
+
+    if (startTx === targetTx && startTy === targetTy) return true;
+
+    const mapWidth = tilemap.width;
+    const mapHeight = tilemap.height;
+
+    const queue: [number, number][] = [[startTx, startTy]];
+    const visited = new Set<string>();
+    visited.add(`${startTx},${startTy}`);
+
+    const dirs = [
+      [0, 1],
+      [0, -1],
+      [1, 0],
+      [-1, 0],
+    ];
+
+    while (queue.length > 0) {
+      const [cx, cy] = queue.shift()!;
+      if (cx === targetTx && cy === targetTy) return true;
+
+      for (const [dx, dy] of dirs) {
+        const nx = cx + dx;
+        const ny = cy + dy;
+        const key = `${nx},${ny}`;
+        if (!visited.has(key)) {
+          if (nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight) {
+            const tile = this.worldLayer.getTileAt(nx, ny);
+            const walkable = !tile || !tile.collides;
+            if (walkable) {
+              if (nx === targetTx && ny === targetTy) return true;
+              visited.add(key);
+              queue.push([nx, ny]);
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  // Đi được nếu tâm + 4 điểm biên (±radius) không trúng ô collides VÀ có đường đi tới (Reachable) từ Spawn Point
   private isWalkable = (x: number, y: number, radius = 16): boolean => {
     const pts: [number, number][] = [
       [x, y],
@@ -110,19 +173,32 @@ export class HostWorld {
       [x, y - radius],
       [x, y + radius],
     ];
-    return pts.every(([px, py]) => {
+
+    // 1. Kiểm tra va chạm vật lý
+    const physicsWalkable = pts.every(([px, py]) => {
       const tile = this.worldLayer.getTileAtWorldXY(px, py);
       return !tile || !tile.collides;
     });
+
+    if (!physicsWalkable) return false;
+
+    // 2. Kiểm tra tính liên thông (Reachability) để tránh spawn trong rừng hoặc trong nhà kín
+    return this.isReachable(x, y);
   };
 
   private async onStatusChange(status: string) {
     this.clearTraps();
     await remove(ref(db, 'traps'));
     await remove(ref(db, 'books'));
+    await remove(ref(db, 'npcs'));
+    await remove(ref(db, 'gates'));
     this.handledMarketEvents.clear();
     if (PHASES.includes(status)) {
       this.spawnTraps(status);
+    }
+    // Phase 3: Auto-spawn escape gate
+    if (status === 'phase_3') {
+      this.spawnEscapeGate();
     }
   }
 
@@ -263,7 +339,7 @@ export class HostWorld {
     );
     const point = this.pickOpportunityPoint(mix, opts.anchor, opts.index || 0);
 
-    void set(ref(db, `books/${id}`), {
+    const data: Record<string, string | number> = {
       x: point.x,
       y: point.y,
       type: opportunity.type,
@@ -272,9 +348,13 @@ export class HostWorld {
       score: scaleDelta(opportunity.score, mix.opportunityScale),
       capital: scaleDelta(opportunity.capital, mix.opportunityScale),
       color: opportunity.color,
-      zone: point.zone,
-      expiresAt: opts.expiresAt,
-    });
+      zone: point.zone || '',
+    };
+    if (opts.expiresAt !== undefined) {
+      data.expiresAt = opts.expiresAt;
+    }
+
+    void set(ref(db, `books/${id}`), data);
   }
 
   private maintainBooks(time: number) {
@@ -287,6 +367,21 @@ export class HostWorld {
 
   private handleMarketEvent(id: string, event: MarketEvent) {
     if (!event || event.phase !== this.status) return;
+
+    // Phase 2: Spawn loyal customer NPC
+    if (event.type === 'spawn_loyal_customer_npc') {
+      void this.spawnLoyalCustomerNpc();
+      return;
+    }
+
+    // Phase 2: Hint for loyal customer
+    if (event.type === 'loyal_customer_hint') {
+      const hint =
+        HINT_MESSAGES[Math.floor(Math.random() * HINT_MESSAGES.length)];
+      void set(ref(db, 'gameState/phase2Hint'), hint);
+      return;
+    }
+
     const mix = phaseMixMap[this.status];
     const marketEvent = MARKET_EVENTS[event.type as keyof typeof MARKET_EVENTS];
     if (!mix || !marketEvent) return;
@@ -311,6 +406,98 @@ export class HostWorld {
         },
       );
     }
+  }
+
+  // Tọa độ ẩn phía sau các tòa nhà — xác định thủ công trên tilemap và 100% đi tới được
+  private static readonly NPC_HIDING_SPOTS: Array<{
+    x: number;
+    y: number;
+    desc: string;
+  }> = [
+    { x: 112, y: 440, desc: 'Hẻm sau dãy shop trái (trên)' },
+    { x: 320, y: 448, desc: 'Khoảng hẹp giữa hai shop trái' },
+    { x: 560, y: 440, desc: 'Sau shop giữa' },
+    { x: 156, y: 760, desc: 'Góc sau toà nhà dưới trái' },
+    { x: 450, y: 770, desc: 'Sau cửa hàng thuốc' },
+    { x: 700, y: 440, desc: 'Hẻm sau shop phải' },
+  ];
+
+  private async spawnLoyalCustomerNpc() {
+    // 1. Xóa các NPC cũ trước để đảm bảo chỉ có tối đa 1 Khách Ruột trên map tại một thời điểm
+    await remove(ref(db, 'npcs'));
+
+    // 2. Shuffle hiding spots và chọn spot đầu tiên isWalkable (đã bao gồm reachability check)
+    const shuffled = [...HostWorld.NPC_HIDING_SPOTS].sort(
+      () => Math.random() - 0.5,
+    );
+    let chosen: { x: number; y: number; zone: string } | null = null;
+
+    for (const spot of shuffled) {
+      if (this.isWalkable(spot.x, spot.y, 14)) {
+        chosen = { x: spot.x, y: spot.y, zone: spot.desc };
+        break;
+      }
+    }
+
+    // Fallback: nếu không spot nào walkable → dùng pickSpawnPoint cũ (loại bỏ tree_clearing)
+    let finalChosen: { x: number; y: number; zone: string };
+    if (chosen) {
+      finalChosen = chosen;
+    } else {
+      const point = spawnAt({
+        preferredZones: ['behind_shops_left', 'mall_shadow', 'niche_corner'],
+        radius: 14,
+        isWalkable: this.isWalkable,
+        maxAttempts: 80,
+      });
+      finalChosen = {
+        x: point.x,
+        y: point.y,
+        zone: point.zone || 'fallback',
+      };
+    }
+
+    // Tạo ID động để các máy client xem đây là một NPC mới và có thể thu thập tiếp
+    const npcId = `loyal_customer_${Date.now()}`;
+
+    await set(ref(db, `npcs/${npcId}`), {
+      id: npcId,
+      type: 'loyal_customer',
+      x: finalChosen.x,
+      y: finalChosen.y,
+      zone: finalChosen.zone,
+    });
+  }
+
+  private spawnEscapeGate() {
+    // Ưu tiên góc dưới bên trái của tòa nhà văn phòng lớn (x: 544, y: 416) đại diện cho việc thoát khỏi độc quyền
+    const officeSpot = { x: 544, y: 416, zone: 'Góc tòa nhà văn phòng' };
+    let finalChosen: { x: number; y: number; zone: string } = officeSpot;
+
+    if (!this.isWalkable(officeSpot.x, officeSpot.y, 24)) {
+      // Fallback nếu có vật cản
+      const point = spawnAt({
+        preferredZones: ['central_market_path', 'mall_shadow'],
+        radius: 24,
+        isWalkable: this.isWalkable,
+        maxAttempts: 80,
+      });
+      finalChosen = {
+        x: point.x,
+        y: point.y,
+        zone: point.zone || 'fallback',
+      };
+    }
+
+    void set(ref(db, 'gates/escape_gate'), {
+      id: 'escape_gate',
+      type: 'escape_gate',
+      label: 'Cổng Thoát',
+      x: finalChosen.x,
+      y: finalChosen.y,
+      zone: finalChosen.zone,
+      activeAt: Date.now() + GATE_ACTIVATION_DELAY,
+    });
   }
 
   private expireBooks() {

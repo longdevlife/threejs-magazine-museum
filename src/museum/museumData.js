@@ -46,8 +46,10 @@ const rawRooms = [
         position: [-16, 3, 4.9],
         rotation: [0, Math.PI, 0],
         images: [
-          "/museum/trienlam/triển lãm p1.png"
-        ]
+          "/museum/trienlam/p1_left.png"
+        ],
+        w: 1.92,
+        h: 2.4
       },
       {
         id: "room1-center",
@@ -60,8 +62,10 @@ const rawRooms = [
         position: [-21.9, 3, 0],
         rotation: [0, Math.PI / 2, 0],
         images: [
-          "/museum/trienlam/triển lãm p1 ngang .png"
-        ]
+          "/museum/trienlam/p1_center.png"
+        ],
+        w: 2.6,
+        h: 1.356
       },
       {
         id: "room1-right",
@@ -74,8 +78,10 @@ const rawRooms = [
         position: [-16, 3, -4.9],
         rotation: [0, 0, 0],
         images: [
-          "/museum/trienlam/triển lãm p1 ngang kiểu khác.png"
-        ]
+          "/museum/trienlam/p1_right.png"
+        ],
+        w: 1.92,
+        h: 2.4
       }
     ]
   },
@@ -98,8 +104,10 @@ const rawRooms = [
         position: [-5.9, 3, -19],
         rotation: [0, Math.PI / 2, 0],
         images: [
-          "/museum/trienlam/triển lãm p2.png"
-        ]
+          "/museum/trienlam/p2_left.png"
+        ],
+        w: 1.8,
+        h: 2.4
       },
       {
         id: "room2-center",
@@ -112,8 +120,10 @@ const rawRooms = [
         position: [0, 3, -23.9],
         rotation: [0, 0, 0],
         images: [
-          "/museum/trienlam/triển lãm p2 ngang .png"
-        ]
+          "/museum/trienlam/p2_center.png"
+        ],
+        w: 2.6,
+        h: 1.15
       },
       {
         id: "room2-right",
@@ -126,8 +136,10 @@ const rawRooms = [
         position: [5.9, 3, -19],
         rotation: [0, -Math.PI / 2, 0],
         images: [
-          "/museum/trienlam/triển lãm p2 ngang kiểu khác.png"
-        ]
+          "/museum/trienlam/p2_right.png"
+        ],
+        w: 1.8,
+        h: 2.4
       }
     ]
   },
@@ -150,8 +162,10 @@ const rawRooms = [
         position: [16, 3, -4.9],
         rotation: [0, 0, 0],
         images: [
-          "/museum/trienlam/triển lãm p3.png"
-        ]
+          "/museum/trienlam/p3_left.png"
+        ],
+        w: 1.92,
+        h: 2.4
       },
       {
         id: "room3-center",
@@ -164,8 +178,10 @@ const rawRooms = [
         position: [21.9, 3, 0],
         rotation: [0, -Math.PI / 2, 0],
         images: [
-          "/museum/trienlam/triển lãm p3 ngang .png"
-        ]
+          "/museum/trienlam/p3_center.png"
+        ],
+        w: 2.6,
+        h: 1.29
       },
       {
         id: "room3-right",
@@ -178,8 +194,10 @@ const rawRooms = [
         position: [16, 3, 4.9],
         rotation: [0, Math.PI, 0],
         images: [
-          "/museum/trienlam/triển lãm p3 ngang kiểu khác.png"
-        ]
+          "/museum/trienlam/p3_right.png"
+        ],
+        w: 1.92,
+        h: 2.4
       }
     ]
   }

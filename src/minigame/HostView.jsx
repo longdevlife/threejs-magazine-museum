@@ -470,6 +470,13 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
               <Leaderboard max={10} title="BẢNG XẾP HẠNG CHI TIẾT (TOP 10)" />
             </div>
 
+            <div className="mission-card" style={{ marginTop: "24px", textAlign: "left" }}>
+              <div className="mission-label">LỚP VỪA TRẢI NGHIỆM GÌ?</div>
+              <div className="mission-text">
+                Càng về sau, cơ hội ít hơn và rủi ro nền tảng nặng hơn. Đây là cách game mô phỏng cạnh tranh tự do chuyển dần thành độc quyền nền tảng.
+              </div>
+            </div>
+
             <div style={{ background: "rgba(255,183,0,0.04)", border: "1px solid rgba(255,183,0,0.15)", borderRadius: "16px", padding: "24px", marginTop: "30px", textAlign: "left", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)" }}>
               <div style={{ fontWeight: "bold", color: "var(--neon-gold)", marginBottom: "10px", fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "6px" }}>
                 <IconBulb className="w-5 h-5 text-yellow-500" /> Bài học tổng kết:

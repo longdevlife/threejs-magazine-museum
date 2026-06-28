@@ -113,6 +113,22 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     return rank !== -1 ? rank + 1 : "-";
   };
 
+  const getLearningResult = () => {
+    const capital = playerInfo.capital || 0;
+    const score = playerInfo.score || 0;
+
+    if (playerInfo.isBankrupt || capital <= 0) {
+      return "Bạn vừa trải nghiệm mặt trái của độc quyền nền tảng: khi luật chơi nghiêng về phía ông lớn, shop nhỏ có thể mất vốn rất nhanh.";
+    }
+    if (capital >= 15000000 && score >= 200) {
+      return "Bạn sống sót tốt nhờ biết tích lũy cơ hội, giữ uy tín và khác biệt hóa thay vì chỉ chạy theo thuật toán.";
+    }
+    if (capital < 10000000 && score >= 200) {
+      return "Bạn có nhiều uy tín, nhưng phí sàn và thuật toán vẫn hút lợi nhuận. Đây là áp lực thật của người bán nhỏ trên nền tảng.";
+    }
+    return "Bạn đã thấy shop nhỏ phải vừa kiếm cơ hội, vừa né rủi ro nền tảng để tồn tại trong thị trường hiện đại.";
+  };
+
   const totalPlayersCount = Object.keys(players).length;
   const isRpgPhase = ["phase_1", "phase_2", "phase_3"].includes(gameState.status);
   const isSituation = gameState.status === "situation_1" || gameState.status === "situation_2";
@@ -322,6 +338,11 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
               {playerInfo.capital?.toLocaleString()}đ
             </strong>
           </div>
+        </div>
+
+        <div className="mission-card" style={{ textAlign: "left", marginBottom: "24px" }}>
+          <div className="mission-label">BÀI HỌC CỦA BẠN</div>
+          <div className="mission-text">{getLearningResult()}</div>
         </div>
 
         <p style={{ color: "#8b8680", fontSize: "0.85rem", lineHeight: "1.5" }}>

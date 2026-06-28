@@ -155,8 +155,8 @@ export class Main extends Phaser.Scene {
     } else {
       this.cameras.main.startFollow(this.player);
       this.cameras.main.setZoom(
-        1.5,
-      ); /* Điều chỉnh zoom Player hợp lý (1.5) để vừa nhìn rõ nhân vật/chữ vừa bao quát được bản đồ */
+        1.15,
+      ); /* Điều chỉnh zoom Player hợp lý (1.15) để vừa nhìn rõ nhân vật/chữ vừa bao quát được bản đồ */
     }
 
     // Lắng nghe sự kiện từ React ngoài

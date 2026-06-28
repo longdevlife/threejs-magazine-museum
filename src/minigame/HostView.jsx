@@ -3,14 +3,6 @@ import { ref, set, onValue, remove, update, get, runTransaction } from "firebase
 import { db } from "./firebaseConfig";
 import { situations, PHASE_CONFIGS } from "./situations";
 import { applyPlayerDelta } from "./gameStateUtils";
-import { checkMapCollisions } from "./rpgEngine";
-import {
-  PHASE_ECONOMY_MIX,
-  getHazardDefinition,
-  getOpportunityDefinition,
-  scaleDelta,
-} from "./economyGameContent";
-import { pickSpawnPoint, pickWeighted } from "./spawnUtils";
 import {
   IconPhone,
   IconDesktop,
@@ -48,65 +40,8 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
 
   // RPG Host logic
   const iframeRef = useRef(null);
-  const requestRef = useRef(null);
-  const lastSyncTime = useRef(0);
   const platformFeeTimer = useRef(null);
   const platformFeeInFlight = useRef(false);
-  const [books, setBooks] = useState({});
-  const booksRef = useRef({});
-  const playersRef = useRef({});
-
-  // 3 kiểu di chuyển bẫy — xen kẽ theo index để mỗi phase có đủ độ đa dạng
-  const TRAP_PATTERNS = ["chase", "diagonal", "patrol"];
-
-  // Cấu hình bẫy động theo phase — vị trí spawn trong vùng đi được thật, size/speed theo từng loại hazard
-  const getInitialTraps = (phaseKey) => {
-    const mix = PHASE_ECONOMY_MIX[phaseKey] || PHASE_ECONOMY_MIX.phase_1;
-    const traps = {};
-    for (let i = 0; i < mix.hazardCount; i++) {
-      const selected = pickWeighted(mix.hazards);
-      const hazard = getHazardDefinition(selected.type);
-      const pattern = TRAP_PATTERNS[i % TRAP_PATTERNS.length];
-      const speed = mix.hazardSpeed;
-      const size = hazard.size || 35;
-      const point = pickSpawnPoint({ preferredZones: mix.preferredZones, radius: size / 2 });
-
-      // Vận tốc ban đầu theo pattern: chéo đi 2 trục, tuần tra đi 1 trục chính
-      let vx = 0;
-      let vy = 0;
-      if (pattern === "diagonal") {
-        const angle = (i / mix.hazardCount) * Math.PI * 2;
-        vx = Math.cos(angle) * speed;
-        vy = Math.sin(angle) * speed;
-      } else if (pattern === "patrol") {
-        const dir = i % 4 < 2 ? 1 : -1;
-        if (i % 2 === 0) vx = speed * dir;
-        else vy = speed * dir;
-      }
-
-      traps[`trap_${i + 1}`] = {
-        id: `trap_${i + 1}`,
-        type: hazard.type,
-        label: hazard.shortLabel,
-        message: hazard.message,
-        score: scaleDelta(hazard.score, mix.hazardScale),
-        capital: scaleDelta(hazard.capital, mix.hazardScale),
-        effect: hazard.effect,
-        durationMs: hazard.durationMs,
-        color: hazard.color,
-        x: point.x,
-        y: point.y,
-        size,
-        pattern,
-        speed,
-        vx,
-        vy,
-      };
-    }
-    return traps;
-  };
-
-  const localTraps = useRef(getInitialTraps("phase_1"));
 
   // QR
   useEffect(() => {
@@ -117,16 +52,9 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   // Lắng nghe players
   useEffect(() => {
     const unsubPlayers = onValue(ref(db, "players"), (s) => {
-      const val = s.val() || {};
-      setPlayers(val);
-      playersRef.current = val;
+      setPlayers(s.val() || {});
     });
-    const unsubBooks = onValue(ref(db, "books"), (s) => {
-      const val = s.val() || {};
-      setBooks(val);
-      booksRef.current = val;
-    });
-    return () => { unsubPlayers(); unsubBooks(); };
+    return () => unsubPlayers();
   }, []);
 
   // Lắng nghe votes cho tình huống hiện tại
@@ -172,101 +100,6 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     return () => { if (platformFeeTimer.current) clearInterval(platformFeeTimer.current); };
   }, [gameState.status]);
 
-  // RPG Host Loop — bẫy + sách
-  const hostLoop = () => {
-    const isPlaying = ["phase_1", "phase_2", "phase_3"].includes(gameState.status);
-    if (isPlaying) {
-      moveTrapsLocal();
-      const now = Date.now();
-      if (now - lastSyncTime.current > 60) {
-        lastSyncTime.current = now;
-        update(ref(db, "traps"), localTraps.current);
-        maintainBooks();
-      }
-    }
-    requestRef.current = requestAnimationFrame(hostLoop);
-  };
-
-  useEffect(() => {
-    requestRef.current = requestAnimationFrame(hostLoop);
-    return () => cancelAnimationFrame(requestRef.current);
-  }, [gameState.status]);
-
-  // ponytail: chase capped ~2.4px/frame < player ~2.9px/frame → player luôn thoát được khi chạy thẳng. Chỉnh nếu thấy quá dễ/khó.
-  const CHASE_SPEED_CAP = 2.4;
-
-  // Player còn sống gần bẫy nhất (để bẫy "chase" đuổi theo)
-  const nearestPlayer = (tx, ty) => {
-    let best = null;
-    let bestDist = Infinity;
-    Object.values(playersRef.current).forEach((p) => {
-      if (!p || p.isBankrupt || typeof p.x !== "number" || typeof p.y !== "number") return;
-      const d = (p.x - tx) ** 2 + (p.y - ty) ** 2;
-      if (d < bestDist) { bestDist = d; best = p; }
-    });
-    return best;
-  };
-
-  // Thử dời bẫy tới (nx,ny); chỉ dời nếu không đâm tường/biên. Trả về true nếu dời được.
-  const tryMove = (t, nx, ny) => {
-    if (checkMapCollisions(nx, ny, (t.size || 35) / 2)) return false;
-    t.x = nx;
-    t.y = ny;
-    return true;
-  };
-
-  const moveTrapsLocal = () => {
-    Object.values(localTraps.current).forEach((t) => {
-      const speed = t.speed || 3.5;
-
-      if (t.pattern === "chase") {
-        const target = nearestPlayer(t.x, t.y);
-        if (!target) return;
-        const dx = target.x - t.x;
-        const dy = target.y - t.y;
-        const len = Math.hypot(dx, dy) || 1;
-        const step = Math.min(CHASE_SPEED_CAP, speed);
-        const nx = t.x + (dx / len) * step;
-        const ny = t.y + (dy / len) * step;
-        // đâm tường thì trượt theo trục; kẹt cả 3 hướng thì rơi xuống bounce-wander để không đứng im
-        if (tryMove(t, nx, ny) || tryMove(t, nx, t.y) || tryMove(t, t.x, ny)) return;
-      }
-
-      // diagonal / patrol (và chase bị kẹt góc): bay theo vx/vy, chạm tường/biên thì đảo trục
-      let { vx = speed, vy = 0 } = t;
-      if (vx === 0 && vy === 0) vx = speed; // chase kẹt → hích ngang cho thoát, khung sau homing đuổi tiếp
-      if (!tryMove(t, t.x + vx, t.y + vy)) {
-        if (tryMove(t, t.x - vx, t.y + vy)) vx = -vx;
-        else if (tryMove(t, t.x + vx, t.y - vy)) vy = -vy;
-        else { vx = -vx; vy = -vy; tryMove(t, t.x + vx, t.y + vy); }
-      }
-      t.vx = vx;
-      t.vy = vy;
-    });
-  };
-
-  const maintainBooks = () => {
-    const mix = PHASE_ECONOMY_MIX[gameState.status];
-    if (!mix) return;
-    if (Object.keys(booksRef.current).length >= mix.maxOpportunities) return;
-
-    const selected = pickWeighted(mix.opportunities);
-    const opportunity = getOpportunityDefinition(selected.type);
-    const point = pickSpawnPoint({ preferredZones: mix.preferredZones, radius: 24 });
-
-    set(ref(db, `books/opportunity_${Date.now()}`), {
-      x: point.x,
-      y: point.y,
-      type: opportunity.type,
-      label: opportunity.shortLabel,
-      message: opportunity.message,
-      score: scaleDelta(opportunity.score, mix.opportunityScale),
-      capital: scaleDelta(opportunity.capital, mix.opportunityScale),
-      color: opportunity.color,
-      zone: point.zone,
-    });
-  };
-
   const playerList = Object.entries(players).map(([id, info]) => ({ id, ...info }));
   const totalPlayers = playerList.length;
   const currentConfig = PHASE_CONFIGS[gameState.status];
@@ -278,7 +111,6 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     const updates = {};
 
     if (phaseKey === "phase_1") {
-      // Reset điểm
       playerList.forEach((p) => {
         updates[`players/${p.id}/score`] = 0;
         updates[`players/${p.id}/capital`] = 20000000;
@@ -287,13 +119,6 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
       });
       await remove(ref(db, "votes"));
     }
-
-    await remove(ref(db, "books"));
-    await remove(ref(db, "traps"));
-
-    // Cập nhật bẫy theo phase
-    localTraps.current = getInitialTraps(phaseKey);
-    await update(ref(db, "traps"), localTraps.current);
 
     updates["gameState"] = {
       status: phaseKey,
@@ -422,10 +247,10 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                 Đã tham gia: <span style={{ fontFamily: "var(--font-mono)", fontWeight: "bold" }}>{totalPlayers}</span> người chơi
                 <div className="loading-dots"><span></span><span></span><span></span></div>
               </div>
-              <button 
-                className="btn-cyber btn-cyber-blue" 
-                style={{ width: "100%", marginTop: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }} 
-                onClick={() => handleStartPhase("phase_1")} 
+              <button
+                className="btn-cyber btn-cyber-blue"
+                style={{ width: "100%", marginTop: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                onClick={() => handleStartPhase("phase_1")}
                 disabled={totalPlayers === 0}
               >
                 <IconLeaf className="w-5 h-5" /> Bắt đầu Phase 1: Thị Trường Tự Do

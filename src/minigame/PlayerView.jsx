@@ -124,7 +124,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     return (
       <div className="minigame-panel" style={{ maxWidth: "450px" }}>
         <h2 className="minigame-title" style={{ fontSize: "1.8rem" }}>THAM GIA CHƠI</h2>
-        <p className="minigame-subtitle" style={{ fontSize: "1rem", marginBottom: "25px" }}>Đăng ký mở shop quà tặng và bắt đầu cuộc sinh tồn</p>
+        <p className="minigame-subtitle" style={{ fontSize: "1rem", marginBottom: "25px" }}>Mở shop nhỏ, săn cơ hội kinh doanh và sống sót trước sức ép nền tảng</p>
         <form onSubmit={handleJoinGame} className="join-form">
           <div className="input-group">
             <label className="input-label">Nhập tên / Biệt danh:</label>

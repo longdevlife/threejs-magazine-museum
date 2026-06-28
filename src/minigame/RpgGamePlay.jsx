@@ -47,6 +47,13 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
   // Lấy config phase hiện tại
   const phaseConfig = PHASE_CONFIGS[gameState.status] || PHASE_CONFIGS.phase_1;
 
+  const incrementProgress = (type) =>
+    runTransaction(
+      ref(db, `players/${playerId}/progress/${gameState.status}/${type}`),
+      (current) => (Number(current) || 0) + 1,
+      { applyLocally: false }
+    );
+
   const addFloatingText = (text, color) => {
     const id = Date.now() + Math.random();
     setFloatingTexts((prev) => [...prev, { id, text, color }]);
@@ -92,7 +99,6 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         const claimedBook = await claimBook(e.data.bookId);
         if (!claimedBook) return;
 
-        const opportunity = e.data.opportunity || {};
         const bonusScore = Number.isFinite(claimedBook.score)
           ? claimedBook.score
           : phaseConfig.bookReward.score;
@@ -101,6 +107,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
           : phaseConfig.bookReward.capital;
 
         await applyScoreCapitalDelta({ score: bonusScore, capital: bonusCapital });
+        await incrementProgress(claimedBook.type || "opportunity");
         addFloatingText(claimedBook.message || `+${bonusScore}đ Cơ hội`, claimedBook.color || "#2e7d32");
       }
 
@@ -124,13 +131,14 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
           : phaseConfig.trapPenalty.capital;
 
         await applyScoreCapitalDelta({ score: penScore, capital: penCapital });
+        await incrementProgress(`hit_${hazard.type || "hazard"}`);
         addFloatingText(hazard.message || `${penScore}đ Rủi ro`, hazard.color || "#c5272d");
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [playerId, phaseConfig]);
+  }, [playerId, phaseConfig, gameState.status]);
 
   // 2. Bộ đếm ngược đóng băng
   useEffect(() => {

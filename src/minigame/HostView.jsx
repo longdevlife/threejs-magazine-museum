@@ -146,12 +146,27 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
         playerUpdates[`${p.id}/eliminatedReason`] = null;
         playerUpdates[`${p.id}/phaseOneQualified`] = null;
         playerUpdates[`${p.id}/phaseOneBonusApplied`] = null;
+        playerUpdates[`${p.id}/phaseTwoQualified`] = null;
+        playerUpdates[`${p.id}/escaped`] = null;
+        playerUpdates[`${p.id}/escapedAt`] = null;
       });
       if (Object.keys(playerUpdates).length > 0) {
         await update(ref(db, "players"), playerUpdates);
       }
       await remove(ref(db, "votes"));
       await remove(ref(db, "marketEvents"));
+    }
+
+    // Phase 3: clear escaped flag cho tất cả player còn sống
+    if (phaseKey === "phase_3") {
+      const playerUpdates = {};
+      playerList.forEach((p) => {
+        playerUpdates[`${p.id}/escaped`] = null;
+        playerUpdates[`${p.id}/escapedAt`] = null;
+      });
+      if (Object.keys(playerUpdates).length > 0) {
+        await update(ref(db, "players"), playerUpdates);
+      }
     }
 
     const gameStateData = {

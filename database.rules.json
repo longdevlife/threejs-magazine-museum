@@ -36,6 +36,9 @@
     },
     "answers": {
       ".write": true
+    },
+    "marketEvents": {
+      ".write": true
     }
   }
 }

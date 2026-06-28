@@ -30,3 +30,36 @@ export const applyPlayerDelta = (player, delta) => {
     isBankrupt: Boolean(player.isBankrupt) || nextCapital <= 0,
   };
 };
+
+export const applyPhaseOneGate = (player) => {
+  if (!player) return player;
+
+  const orders = Number(player.progress?.phase_1?.order) || 0;
+
+  if (orders < 3) {
+    return {
+      ...player,
+      capital: 0,
+      isBankrupt: true,
+      eliminatedReason: "Không đạt tối thiểu 3 đơn hàng ở Phase 1",
+      phaseOneQualified: false,
+    };
+  }
+
+  if (orders >= 5 && !player.phaseOneBonusApplied) {
+    return {
+      ...player,
+      score: (player.score || 0) + 50,
+      capital: (player.capital || 0) + 1_000_000,
+      isBankrupt: Boolean(player.isBankrupt),
+      phaseOneQualified: true,
+      phaseOneBonusApplied: true,
+    };
+  }
+
+  return {
+    ...player,
+    isBankrupt: Boolean(player.isBankrupt),
+    phaseOneQualified: false,
+  };
+};

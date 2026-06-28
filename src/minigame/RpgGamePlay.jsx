@@ -40,12 +40,37 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
   // Trạng thái đóng băng
   const [isFrozen, setIsFrozen] = useState(false);
   const [freezeTime, setFreezeTime] = useState(0);
+  const freezeTimeoutRef = useRef(null);
 
   // Floating text
   const [floatingTexts, setFloatingTexts] = useState([]);
+  const [nowMs, setNowMs] = useState(Date.now());
 
   // Lấy config phase hiện tại
   const phaseConfig = PHASE_CONFIGS[gameState.status] || PHASE_CONFIGS.phase_1;
+  const activeMission = gameState.mission || phaseConfig.mission;
+  const activeMeaning = gameState.learningMeaning || phaseConfig.learningMeaning;
+  const progressGoals = gameState.progressGoals || phaseConfig.progressGoals || [];
+  const phaseProgress = playerInfo.progress?.[gameState.status] || {};
+  const elapsedSeconds = gameState.phaseStartedAt
+    ? Math.max(0, Math.floor((nowMs - gameState.phaseStartedAt) / 1000))
+    : 0;
+
+  const progressText = progressGoals
+    .map((goal) => {
+      const current = goal.type === "survive_seconds"
+        ? Math.min(goal.target, elapsedSeconds)
+        : Math.min(goal.target, Number(phaseProgress[goal.type]) || 0);
+      return `${goal.label}: ${current}/${goal.target}`;
+    })
+    .join(" | ");
+
+  const incrementProgress = (type) =>
+    runTransaction(
+      ref(db, `players/${playerId}/progress/${gameState.status}/${type}`),
+      (current) => (Number(current) || 0) + 1,
+      { applyLocally: false }
+    );
 
   const addFloatingText = (text, color) => {
     const id = Date.now() + Math.random();
@@ -54,6 +79,11 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
       setFloatingTexts((prev) => prev.filter((t) => t.id !== id));
     }, 1500);
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 1. Lắng nghe postMessage từ Phaser
   useEffect(() => {
@@ -92,7 +122,6 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         const claimedBook = await claimBook(e.data.bookId);
         if (!claimedBook) return;
 
-        const opportunity = e.data.opportunity || {};
         const bonusScore = Number.isFinite(claimedBook.score)
           ? claimedBook.score
           : phaseConfig.bookReward.score;
@@ -101,6 +130,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
           : phaseConfig.bookReward.capital;
 
         await applyScoreCapitalDelta({ score: bonusScore, capital: bonusCapital });
+        await incrementProgress(claimedBook.type || "opportunity");
         addFloatingText(claimedBook.message || `+${bonusScore}đ Cơ hội`, claimedBook.color || "#2e7d32");
       }
 
@@ -111,9 +141,15 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         const freezeSeconds = Math.ceil((hazard.durationMs || 3000) / 1000);
 
         if (shouldFreeze) {
+          if (freezeTimeoutRef.current) clearTimeout(freezeTimeoutRef.current);
           setIsFrozen(true);
           setFreezeTime(freezeSeconds);
           iframeRef.current?.contentWindow?.postMessage({ type: "FREEZE" }, "*");
+          freezeTimeoutRef.current = setTimeout(() => {
+            setIsFrozen(false);
+            setFreezeTime(0);
+            iframeRef.current?.contentWindow?.postMessage({ type: "UNFREEZE" }, "*");
+          }, hazard.durationMs || 3000);
         }
 
         const penScore = Number.isFinite(hazard.score)
@@ -124,32 +160,30 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
           : phaseConfig.trapPenalty.capital;
 
         await applyScoreCapitalDelta({ score: penScore, capital: penCapital });
+        await incrementProgress(`hit_${hazard.type || "hazard"}`);
         addFloatingText(hazard.message || `${penScore}đ Rủi ro`, hazard.color || "#c5272d");
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [playerId, phaseConfig]);
+  }, [playerId, phaseConfig, gameState.status]);
 
   // 2. Bộ đếm ngược đóng băng
   useEffect(() => {
-    let timer;
-    if (isFrozen && freezeTime > 0) {
-      timer = setInterval(() => {
-        setFreezeTime((prev) => {
-          if (prev <= 1) {
-            setIsFrozen(false);
-            iframeRef.current?.contentWindow?.postMessage({ type: "UNFREEZE" }, "*");
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    if (!isFrozen) return undefined;
+    const timer = setInterval(() => {
+      setFreezeTime((prev) => Math.max(0, prev - 1));
+    }, 1000);
     return () => clearInterval(timer);
-  }, [isFrozen, freezeTime]);
+  }, [isFrozen]);
+
+  useEffect(() => {
+    return () => {
+      if (freezeTimeoutRef.current) clearTimeout(freezeTimeoutRef.current);
+      iframeRef.current?.contentWindow?.postMessage({ type: "UNFREEZE" }, "*");
+    };
+  }, [gameState.status]);
 
   // 3. Hiện thông báo phí sàn khi bị trừ tự động (qua Firebase onValue)
   const lastCapitalRef = useRef(playerInfo.capital);
@@ -176,10 +210,10 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1400px", margin: "0 auto" }}>
 
-      {/* Phase indicator + HUD - Vintage Academic styling */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#ede8e1", border: "1px solid rgba(0, 0, 0, 0.08)", borderRadius: "16px", padding: "12px 20px", marginBottom: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6)", color: "#2c1a0e" }}>
+      {/* Phase indicator + HUD - Pixel UI/UX 8-bit styling */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#fff6d7", border: "3px solid #000", borderRadius: "0px", padding: "12px 20px", marginBottom: "12px", boxShadow: "5px 5px 0 rgba(0,0,0,0.5)", color: "#2c1a0e" }}>
         {/* Phase badge */}
         <div style={{ textAlign: "center", minWidth: "90px" }}>
           <div style={{ fontSize: "7px", color: "var(--neon-gold)", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px" }}>Giai đoạn</div>
@@ -187,7 +221,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
             {getPhaseIcon(gameState.status, "w-4 h-4")} {phaseConfig.name.split(" ").slice(0, 2).join(" ")}
           </div>
         </div>
-        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
+        <div style={{ width: "2px", background: "#000", margin: "0 12px", height: "30px" }} />
 
         {/* Vốn */}
         <div style={{ textAlign: "center", flex: 1 }}>
@@ -202,7 +236,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
             )}
           </div>
         </div>
-        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
+        <div style={{ width: "2px", background: "#000", margin: "0 12px", height: "30px" }} />
 
         {/* Điểm */}
         <div style={{ textAlign: "center", flex: 1 }}>
@@ -211,7 +245,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
             <span className="pix-num">{playerInfo.score || 0}đ</span>
           </div>
         </div>
-        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
+        <div style={{ width: "2px", background: "#000", margin: "0 12px", height: "30px" }} />
 
         {/* Nhân vật */}
         <div style={{ textAlign: "center", flex: 1 }}>
@@ -227,6 +261,15 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         <div style={{ width: "100%", background: "rgba(197,39,45,0.08)", border: "1px solid rgba(197,39,45,0.15)", borderRadius: "10px", padding: "8px 12px", marginBottom: "10px", fontSize: "0.75rem", color: "#ff6b35", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
           <IconSkull className="w-4 h-4 text-red-500 animate-pulse" />
           <span>Hệ quả Độc quyền (Phí sàn): <b>-{(phaseConfig.platformFeeAmount / 1000000).toFixed(0)} triệu</b> vốn mỗi <b>{phaseConfig.platformFeeInterval / 1000}s</b></span>
+        </div>
+      )}
+
+      {activeMission && (
+        <div className="mission-card">
+          <div className="mission-label">NHIỆM VỤ PHASE</div>
+          <div className="mission-text">{activeMission}</div>
+          {progressText && <div className="mission-progress pix-num">{progressText}</div>}
+          {activeMeaning && <div className="mission-meaning">{activeMeaning}</div>}
         </div>
       )}
 

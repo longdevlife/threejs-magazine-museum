@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ref, set, onValue, remove, update, get, runTransaction } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { situations, PHASE_CONFIGS } from "./situations";
-import { applyPlayerDelta } from "./gameStateUtils";
+import { applyPhaseOneGate, applyPlayerDelta } from "./gameStateUtils";
 import {
   IconPhone,
   IconDesktop,
@@ -104,34 +104,86 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   const totalPlayers = playerList.length;
   const currentConfig = PHASE_CONFIGS[gameState.status];
 
+  // Tính toán KPI Realtime
+  const activePlayersCount = playerList.filter(p => !p.isBankrupt).length;
+  const bankruptPlayersCount = playerList.filter(p => p.isBankrupt).length;
+  
+  const totalClassOrders = playerList.reduce((sum, p) => {
+    const orders = Number(p.progress?.[gameState.status]?.order) || 0;
+    return sum + orders;
+  }, 0);
+
+  const totalPlatformTake = playerList.reduce((sum, p) => {
+    if (gameState.status === "phase_1") return 0;
+    const loss = 20000000 - (p.capital || 0);
+    return sum + (loss > 0 ? loss : 0);
+  }, 0);
+
+  const marketEvents = [
+    { type: "flash_sale", label: "Tung Flash Sale", hint: "Cụm đơn hàng" },
+    { type: "review_wave", label: "Mở Review Wave", hint: "Cụm review" },
+    { type: "loyal_customer_drop", label: "Thả Khách Quen", hint: "Cụm khách riêng" },
+  ];
+
   // ===== ACTIONS =====
 
   const handleStartPhase = async (phaseKey) => {
     const config = PHASE_CONFIGS[phaseKey];
-    const updates = {};
 
     if (phaseKey === "phase_1") {
+      const playerUpdates = {};
       playerList.forEach((p) => {
-        updates[`players/${p.id}/score`] = 0;
-        updates[`players/${p.id}/capital`] = 20000000;
-        updates[`players/${p.id}/streak`] = 0;
-        updates[`players/${p.id}/isBankrupt`] = false;
+        playerUpdates[`${p.id}/score`] = 0;
+        playerUpdates[`${p.id}/capital`] = 20000000;
+        playerUpdates[`${p.id}/streak`] = 0;
+        playerUpdates[`${p.id}/isBankrupt`] = false;
+        playerUpdates[`${p.id}/progress`] = null;
+        playerUpdates[`${p.id}/eliminatedReason`] = null;
+        playerUpdates[`${p.id}/phaseOneQualified`] = null;
+        playerUpdates[`${p.id}/phaseOneBonusApplied`] = null;
       });
+      if (Object.keys(playerUpdates).length > 0) {
+        await update(ref(db, "players"), playerUpdates);
+      }
       await remove(ref(db, "votes"));
+      await remove(ref(db, "marketEvents"));
     }
 
-    updates["gameState"] = {
+    const gameStateData = {
       status: phaseKey,
       phaseStartedAt: Date.now(),
       bookReward: config.bookReward,
       trapPenalty: config.trapPenalty,
+      mission: config.mission,
+      learningMeaning: config.learningMeaning,
+      recap: config.recap,
+      progressGoals: config.progressGoals,
     };
 
-    await update(ref(db), updates);
+    await set(ref(db, "gameState"), gameStateData);
   };
 
-  const handleTriggerSituation = (sitNum) => {
-    set(ref(db, "gameState/status"), `situation_${sitNum}`);
+  const handleMarketEvent = async (eventType) => {
+    const id = `${Date.now()}_${eventType}`;
+    await set(ref(db, `marketEvents/${id}`), {
+      type: eventType,
+      phase: gameState.status,
+      createdAt: Date.now(),
+    });
+  };
+
+  const handleTriggerSituation = async (sitNum) => {
+    if (sitNum === 1) {
+      const updates = {};
+      playerList.forEach((p) => {
+        const { id, ...playerData } = p;
+        updates[`${id}`] = applyPhaseOneGate(playerData);
+      });
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db, "players"), updates);
+      }
+    }
+    await set(ref(db, "gameState/status"), `situation_${sitNum}`);
   };
 
   const handleFinishGame = () => {
@@ -139,11 +191,18 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   };
 
   const handleResetGame = async () => {
+    // 1. Đưa trạng thái game về waiting trước để tất cả client unmount game ngay lập tức
+    await set(ref(db, "gameState"), { status: "waiting" });
+    
+    // 2. Chờ một khoảng trễ ngắn (100ms) để các client kịp nhận tin, unmount và dừng ghi dữ liệu vị trí
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 3. Sau đó mới dọn dẹp sạch sẽ database
     await remove(ref(db, "votes"));
     await remove(ref(db, "books"));
     await remove(ref(db, "traps"));
+    await remove(ref(db, "marketEvents"));
     await remove(ref(db, "players"));
-    await set(ref(db, "gameState"), { status: "waiting" });
   };
 
   // Vote stats
@@ -162,27 +221,58 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   };
 
   // ===== Leaderboard =====
-  const Leaderboard = ({ max = 8, title = "XẾP HẠNG REALTIME" }) => (
-    <div>
-      <h3 className="leaderboard-title" style={{ fontSize: "1rem", color: "var(--neon-gold)", letterSpacing: "0.5px" }}>{title}</h3>
-      <div className="leaderboard-list">
+  const Leaderboard = ({ max = 5, title = "XẾP HẠNG REALTIME" }) => (
+    <div className="dashboard-widget" style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "14px", padding: "16px" }}>
+      <h3 className="leaderboard-title" style={{ fontSize: "0.85rem", color: "var(--neon-gold)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
+        <IconTrophy className="w-4 h-4 text-yellow-500" /> {title}
+      </h3>
+      <div className="leaderboard-list" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
         {playerList
           .sort((a, b) => b.score - a.score)
           .slice(0, max)
-          .map((p, idx) => (
-            <div className="leaderboard-item" key={p.id} style={{ fontVariantNumeric: "tabular-nums" }}>
-              <div className="player-info">
-                <span className="player-rank">{idx + 1}</span>
-                <span className="player-name-txt" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  {p.name} {p.isBankrupt && <IconSkull className="w-4.5 h-4.5 text-red-500 inline-block" />}
-                </span>
+          .map((p, idx) => {
+            const cap = p.capital || 0;
+            const capPercent = Math.min(100, Math.max(0, (cap / 20000000) * 100));
+            const barColor = p.isBankrupt || cap <= 0 
+              ? "#c5272d" // Đỏ Marx
+              : cap < 8000000 
+                ? "rgba(197, 39, 45, 0.7)" 
+                : cap < 16000000 
+                  ? "var(--neon-gold)" 
+                  : "var(--neon-green)";
+            
+            return (
+              <div className="leaderboard-item-flat" key={p.id} style={{ display: "flex", flexDirection: "column", gap: "6px", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "10px", padding: "10px 12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ 
+                      width: "18px", 
+                      height: "18px", 
+                      borderRadius: "50%", 
+                      background: idx === 0 ? "var(--neon-gold)" : idx === 1 ? "#a0a0a0" : idx === 2 ? "#b07040" : "rgba(255,255,255,0.05)",
+                      color: idx < 3 ? "#000" : "#8b8680",
+                      fontSize: "0.7rem",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}>{idx + 1}</span>
+                    <span style={{ fontWeight: "bold", color: "#fff", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.85rem" }}>
+                      {p.name} {p.isBankrupt && <IconSkull className="w-3.5 h-3.5 text-red-500 inline-block" />}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "0.78rem" }}>
+                    <span className="pix-num" style={{ color: p.isBankrupt ? "var(--neon-red)" : "#a8a29a", fontWeight: "bold" }}>{cap.toLocaleString()}đ</span>
+                    <span className="pix-num" style={{ color: "var(--neon-gold)", fontWeight: "bold" }}>{p.score}đ</span>
+                  </div>
+                </div>
+                {/* Wealth progress bar */}
+                <div style={{ width: "100%", height: "3px", background: "rgba(255,255,255,0.04)", borderRadius: "1.5px", overflow: "hidden" }}>
+                  <div style={{ width: `${capPercent}%`, height: "100%", background: barColor, borderRadius: "1.5px", transition: "width 0.4s ease" }} />
+                </div>
               </div>
-              <div style={{ display: "flex", gap: "12px", fontSize: "0.85rem" }}>
-                <span className="pix-num" style={{ color: p.capital <= 0 ? "var(--neon-red)" : "#8b8680" }}>{(p.capital || 0).toLocaleString()}đ</span>
-                <span className="player-score-txt pix-num">{p.score}đ</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
       </div>
     </div>
   );
@@ -190,7 +280,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   const isRpgPhase = ["phase_1", "phase_2", "phase_3"].includes(gameState.status);
 
   return (
-    <div className="minigame-panel" style={{ maxWidth: "1450px", width: "95%" }}>
+    <div className="minigame-panel host-panel">
       {/* Header MC */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -251,7 +341,6 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                 className="btn-cyber btn-cyber-blue"
                 style={{ width: "100%", marginTop: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 onClick={() => handleStartPhase("phase_1")}
-                disabled={totalPlayers === 0}
               >
                 <IconLeaf className="w-5 h-5" /> Bắt đầu Phase 1: Thị Trường Tự Do
               </button>
@@ -272,67 +361,121 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
 
       {/* ===== RPG PHASE (1/2/3) ===== */}
       {isRpgPhase && (
-        <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-            <h2 style={{ fontSize: "1.2rem", fontWeight: "bold", color: "var(--neon-gold)", margin: 0, display: "inline-flex", alignItems: "center", gap: "6px" }}>
-              {getPhaseIcon(gameState.status)} PHASE {gameState.status.replace("phase_", "")}: {currentConfig.name}
-            </h2>
-            <span style={{ color: "#8b8680", fontSize: "0.85rem" }}><span className="pix-num">{totalPlayers}</span> người chơi</span>
+        <div className="host-dashboard-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "20px", marginTop: "15px", textAlign: "left" }}>
+          {/* Cột trái: KPI & Bản đồ */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            
+            {/* KPI Cards row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
+              <div className="kpi-card-flat">
+                <span className="kpi-label">Người Chơi Hoạt Động</span>
+                <span className="kpi-val pix-num" style={{ color: "var(--neon-blue)" }}>
+                  {activePlayersCount}<span style={{ fontSize: "0.85rem", color: "#8b8680", fontWeight: "normal" }}>/{totalPlayers}</span>
+                </span>
+              </div>
+              <div className="kpi-card-flat">
+                <span className="kpi-label">Shop Đã Phá Sản</span>
+                <span className="kpi-val pix-num" style={{ color: bankruptPlayersCount > 0 ? "var(--neon-red)" : "#8b8680" }}>
+                  {bankruptPlayersCount}
+                </span>
+              </div>
+              <div className="kpi-card-flat">
+                <span className="kpi-label">Đơn Hàng Cả Lớp</span>
+                <span className="kpi-val pix-num" style={{ color: "var(--neon-green)" }}>
+                  {totalClassOrders}
+                </span>
+              </div>
+              <div className="kpi-card-flat">
+                <span className="kpi-label">Phí Sàn Thu Ước Tính</span>
+                <span className="kpi-val pix-num" style={{ color: totalPlatformTake > 0 ? "var(--neon-gold)" : "#8b8680" }}>
+                  {totalPlatformTake > 0 ? `${(totalPlatformTake / 1000000).toFixed(1)}M` : "0đ"}
+                </span>
+              </div>
+            </div>
+
+            {/* Spec Info Banner if Platform Fee is active */}
+            {currentConfig.platformFeeInterval > 0 && (
+              <div style={{ background: "rgba(197,39,45,0.06)", border: "1px solid rgba(197,39,45,0.12)", borderRadius: "10px", padding: "8px 12px", fontSize: "0.8rem", color: "var(--neon-red)", display: "flex", alignItems: "center", gap: "6px" }}>
+                <IconSkull className="w-4 h-4 flex-shrink-0" />
+                <span>PHÍ SÀN: Tự động trừ <b className="pix-num" style={{ fontFamily: "var(--font-mono)" }}>{currentConfig.platformFeeAmount.toLocaleString()}đ</b> vốn mỗi <b className="pix-num" style={{ fontFamily: "var(--font-mono)" }}>{currentConfig.platformFeeInterval / 1000}s</b></span>
+              </div>
+            )}
+
+            {/* Phaser RPG Game Spectator Iframe */}
+            <div style={{ border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", overflow: "hidden", background: "#000", boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
+              <iframe
+                ref={iframeRef}
+                src="/rpg/index.html?role=host"
+                style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
+                title="RPG Spectator"
+              />
+            </div>
+            <div style={{ color: "#8b8680", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "4px" }}>
+              <IconBulb className="w-3.5 h-3.5 text-yellow-500" /> Kéo chuột hoặc phím mũi tên để quan sát bản đồ
+            </div>
           </div>
 
-
-          {/* MC narration */}
-          <div style={{ background: "rgba(255,183,0,0.03)", border: "1px solid rgba(255,183,0,0.15)", borderRadius: "12px", padding: "12px 18px", marginBottom: "15px", fontSize: "0.95rem", color: "var(--neon-gold)", fontStyle: "italic", display: "flex", alignItems: "center", gap: "8px" }}>
-            <IconBulb className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-            <span>MC: "{currentConfig.mcNarration}"</span>
-          </div>
-
-          {/* Thông tin phase */}
-          {currentConfig.platformFeeInterval > 0 && (
-            <div style={{ background: "rgba(197,39,45,0.08)", border: "1px solid rgba(197,39,45,0.2)", borderRadius: "8px", padding: "8px 15px", marginBottom: "15px", fontSize: "0.85rem", color: "var(--neon-red)", display: "flex", alignItems: "center", gap: "6px" }}>
-              <IconSkull className="w-4 h-4 flex-shrink-0" />
-              <span>PHÍ SÀN: Tự động trừ <b className="pix-num" style={{ fontFamily: "var(--font-mono)" }}>{currentConfig.platformFeeAmount.toLocaleString()}đ</b> vốn mỗi <b className="pix-num" style={{ fontFamily: "var(--font-mono)" }}>{currentConfig.platformFeeInterval / 1000}s</b></span>
-            </div>
-          )}
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", justifyContent: "center" }}>
-            {/* RPG Spectator */}
-            <div style={{ flex: "2", minWidth: "350px", maxWidth: "1000px", width: "100%" }}>
-              <div style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", overflow: "hidden", background: "#000", boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
-                <iframe
-                  ref={iframeRef}
-                  src="/rpg/index.html?role=host"
-                  style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
-                  title="RPG Spectator"
-                />
+          {/* Cột phải: Leaderboard & Điều khiển */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            
+            {/* Lời MC dẫn dắt */}
+            <div className="narrative-widget" style={{ background: "rgba(255,183,0,0.01)", border: "1px solid rgba(255,183,0,0.06)", borderRadius: "12px", padding: "12px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--neon-gold)", fontWeight: "bold", fontSize: "0.75rem", textTransform: "uppercase", marginBottom: "6px" }}>
+                <IconBulb className="w-3.5 h-3.5 text-yellow-500" /> MC Dẫn Dắt
               </div>
-              <div style={{ marginTop: "8px", color: "#8b8680", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px" }}>
-                <IconBulb className="w-4 h-4 text-yellow-500" /> Kéo chuột hoặc phím mũi tên để quan sát bản đồ
-              </div>
+              <p style={{ color: "#e1dbd6", fontStyle: "italic", fontSize: "0.85rem", margin: 0, lineHeight: "1.5" }}>
+                "{currentConfig.mcNarration}"
+              </p>
             </div>
 
-            {/* Leaderboard + Controls */}
-            <div style={{ flex: "1", minWidth: "260px", maxWidth: "350px", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "16px", padding: "20px", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)" }}>
-              <Leaderboard />
+            {/* Leaderboard */}
+            <Leaderboard />
 
-              <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                {gameState.status === "phase_1" && (
-                  <button className="btn-cyber" style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }} onClick={() => handleTriggerSituation(1)}>
-                    <IconBolt className="w-4 h-4 text-yellow-500" /> Kích hoạt Tình huống 1
+            {/* Sự kiện thị trường */}
+            <div className="dashboard-widget" style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "14px", padding: "16px" }}>
+              <h4 style={{ fontSize: "0.8rem", color: "var(--neon-blue)", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px 0" }}>Kích Hoạt Sự Kiện</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {marketEvents.map((event) => (
+                  <button
+                    key={event.type}
+                    className="btn-market-flat"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "10px 14px", borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(255,255,255,0.03)", background: "rgba(255,255,255,0.02)", width: "100%" }}
+                    onClick={() => handleMarketEvent(event.type)}
+                  >
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "bold", fontSize: "0.8rem", color: "#fff" }}>
+                      <IconBook className="w-4 h-4 text-amber-500" /> {event.label}
+                    </span>
+                    <span style={{ color: "#8b8680", fontSize: "0.7rem" }}>{event.hint}</span>
                   </button>
-                )}
-                {gameState.status === "phase_2" && (
-                  <button className="btn-cyber" style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }} onClick={() => handleTriggerSituation(2)}>
-                    <IconBolt className="w-4 h-4 text-yellow-500" /> Kích hoạt Tình huống 2
-                  </button>
-                )}
-                {gameState.status === "phase_3" && (
-                  <button className="btn-cyber btn-cyber-blue" style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }} onClick={handleFinishGame}>
-                    <IconTrophy className="w-4 h-4 text-yellow-500" /> Kết thúc & Vinh danh
-                  </button>
-                )}
+                ))}
               </div>
             </div>
+
+            {/* MC Chốt ý & Chuyển Phase */}
+            <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
+              {currentConfig.recap && (
+                <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: "10px", padding: "10px 12px", fontSize: "0.8rem" }}>
+                  <span style={{ color: "var(--neon-gold)", fontWeight: "bold", display: "block", marginBottom: "3px" }}>MC CHỐT Ý:</span>
+                  <span style={{ color: "#a8a29a", lineHeight: "1.4" }}>{currentConfig.recap}</span>
+                </div>
+              )}
+              {gameState.status === "phase_1" && (
+                <button className="btn-cyber" style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "12px", fontSize: "0.95rem" }} onClick={() => handleTriggerSituation(1)}>
+                  <IconBolt className="w-4 h-4 text-yellow-500 animate-pulse" /> Chốt Phase 1 & Tình huống 1
+                </button>
+              )}
+              {gameState.status === "phase_2" && (
+                <button className="btn-cyber" style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "12px", fontSize: "0.95rem" }} onClick={() => handleTriggerSituation(2)}>
+                  <IconBolt className="w-4 h-4 text-yellow-500 animate-pulse" /> Chốt Phase 2 & Tình huống 2
+                </button>
+              )}
+              {gameState.status === "phase_3" && (
+                <button className="btn-cyber btn-cyber-blue" style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "12px", fontSize: "0.95rem" }} onClick={handleFinishGame}>
+                  <IconTrophy className="w-4 h-4 text-yellow-500 animate-bounce" /> Kết thúc & Vinh danh
+                </button>
+              )}
+            </div>
+
           </div>
         </div>
       )}
@@ -458,6 +601,13 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
 
             <div style={{ marginTop: "30px", textAlign: "left" }}>
               <Leaderboard max={10} title="BẢNG XẾP HẠNG CHI TIẾT (TOP 10)" />
+            </div>
+
+            <div className="mission-card" style={{ marginTop: "24px", textAlign: "left" }}>
+              <div className="mission-label">LỚP VỪA TRẢI NGHIỆM GÌ?</div>
+              <div className="mission-text">
+                Càng về sau, cơ hội ít hơn và rủi ro nền tảng nặng hơn. Đây là cách game mô phỏng cạnh tranh tự do chuyển dần thành độc quyền nền tảng.
+              </div>
             </div>
 
             <div style={{ background: "rgba(255,183,0,0.04)", border: "1px solid rgba(255,183,0,0.15)", borderRadius: "16px", padding: "24px", marginTop: "30px", textAlign: "left", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)" }}>

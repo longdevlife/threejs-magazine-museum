@@ -113,6 +113,22 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     return rank !== -1 ? rank + 1 : "-";
   };
 
+  const getLearningResult = () => {
+    const capital = playerInfo.capital || 0;
+    const score = playerInfo.score || 0;
+
+    if (playerInfo.isBankrupt || capital <= 0) {
+      return "Bạn vừa trải nghiệm mặt trái của độc quyền nền tảng: khi luật chơi nghiêng về phía ông lớn, shop nhỏ có thể mất vốn rất nhanh.";
+    }
+    if (capital >= 15000000 && score >= 200) {
+      return "Bạn sống sót tốt nhờ biết tích lũy cơ hội, giữ uy tín và khác biệt hóa thay vì chỉ chạy theo thuật toán.";
+    }
+    if (capital < 10000000 && score >= 200) {
+      return "Bạn có nhiều uy tín, nhưng phí sàn và thuật toán vẫn hút lợi nhuận. Đây là áp lực thật của người bán nhỏ trên nền tảng.";
+    }
+    return "Bạn đã thấy shop nhỏ phải vừa kiếm cơ hội, vừa né rủi ro nền tảng để tồn tại trong thị trường hiện đại.";
+  };
+
   const totalPlayersCount = Object.keys(players).length;
   const isRpgPhase = ["phase_1", "phase_2", "phase_3"].includes(gameState.status);
   const isSituation = gameState.status === "situation_1" || gameState.status === "situation_2";
@@ -122,7 +138,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
   // ===== 1. CHƯA ĐĂNG KÝ =====
   if (!isJoined) {
     return (
-      <div className="minigame-panel" style={{ maxWidth: "450px" }}>
+      <div className="minigame-panel player-panel-md">
         <h2 className="minigame-title" style={{ fontSize: "1.8rem" }}>THAM GIA CHƠI</h2>
         <p className="minigame-subtitle" style={{ fontSize: "1rem", marginBottom: "25px" }}>Mở shop nhỏ, săn cơ hội kinh doanh và sống sót trước sức ép nền tảng</p>
         <form onSubmit={handleJoinGame} className="join-form">
@@ -171,7 +187,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
   // ===== 2. WAITING =====
   if (gameState.status === "waiting") {
     return (
-      <div className="minigame-panel" style={{ maxWidth: "450px", textAlign: "center" }}>
+      <div className="minigame-panel player-panel-sm" style={{ textAlign: "center" }}>
         <div style={{ marginBottom: "20px", display: "flex", justifyContent: "center" }}>
           <IconPhone className="w-16 h-16 text-cyan-400 animate-bounce" />
         </div>
@@ -196,6 +212,24 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
 
   // ===== 3. RPG PHASE (1/2/3) — Chơi game RPG =====
   if (isRpgPhase) {
+    if (playerInfo.isBankrupt) {
+      return (
+        <div className="minigame-panel player-panel-sm" style={{ textAlign: "center" }}>
+          <IconSkull className="w-16 h-16 mx-auto text-red-500 animate-pulse" />
+          <h2 className="minigame-title" style={{ fontSize: "1.6rem" }}>SHOP ĐÃ BỊ LOẠI</h2>
+          <p className="minigame-subtitle" style={{ lineHeight: "1.6" }}>
+            {playerInfo.eliminatedReason || "Bạn đã cạn vốn trong cuộc cạnh tranh nền tảng."}
+          </p>
+          <div className="mission-card" style={{ textAlign: "left", marginTop: "20px" }}>
+            <div className="mission-label">BÀI HỌC NHANH</div>
+            <div className="mission-text">
+              Khi không tích lũy đủ đơn hàng và vốn ban đầu, shop nhỏ rất dễ bị cuốn khỏi thị trường khi luật chơi bắt đầu nghiêng về nền tảng lớn.
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <RpgGamePlay
         playerId={playerId}
@@ -213,7 +247,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     const sit = situations[sitIdx];
 
     return (
-      <div className="minigame-panel" style={{ maxWidth: "550px" }}>
+      <div className="minigame-panel player-panel-md">
         <div style={{ textAlign: "center", marginBottom: "15px" }}>
           <IconBolt className="w-12 h-12 mx-auto text-red-500 animate-pulse" />
           <h2 style={{ color: "var(--neon-red)", fontSize: "1.3rem", fontWeight: "bold", margin: "8px 0" }}>
@@ -296,7 +330,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     }
 
     return (
-      <div className="minigame-panel" style={{ maxWidth: "450px", textAlign: "center" }}>
+      <div className="minigame-panel player-panel-sm" style={{ textAlign: "center" }}>
         <div style={{ marginBottom: "15px", display: "flex", justifyContent: "center" }}>
           <IconTrophy className="w-16 h-16 text-yellow-500 animate-pulse" />
         </div>
@@ -322,6 +356,11 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
               {playerInfo.capital?.toLocaleString()}đ
             </strong>
           </div>
+        </div>
+
+        <div className="mission-card" style={{ textAlign: "left", marginBottom: "24px" }}>
+          <div className="mission-label">BÀI HỌC CỦA BẠN</div>
+          <div className="mission-text">{getLearningResult()}</div>
         </div>
 
         <p style={{ color: "#8b8680", fontSize: "0.85rem", lineHeight: "1.5" }}>

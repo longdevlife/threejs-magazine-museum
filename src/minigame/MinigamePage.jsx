@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ref, onValue, set } from "firebase/database";
+import { ref, onValue, set, remove } from "firebase/database";
 import { db } from "./firebaseConfig";
 import HostView from "./HostView";
 import PlayerView from "./PlayerView";
@@ -67,9 +67,29 @@ export const MinigamePage = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleSelectRole = (selectedRole) => {
+  const handleSelectRole = async (selectedRole) => {
     setRole(selectedRole);
     localStorage.setItem("minigame_role", selectedRole);
+
+    // Nếu chọn làm Host/MC, tự động reset game về trạng thái phòng chờ ban đầu để sẵn sàng đón người chơi mới
+    if (selectedRole === "host") {
+      try {
+        // 1. Đưa trạng thái game về waiting trước để tất cả client unmount game ngay lập tức
+        await set(ref(db, "gameState"), { status: "waiting" });
+        
+        // 2. Chờ một khoảng trễ ngắn (100ms) để các client kịp nhận tin, unmount và dừng ghi dữ liệu vị trí
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // 3. Sau đó mới dọn dẹp sạch sẽ database
+        await remove(ref(db, "votes"));
+        await remove(ref(db, "books"));
+        await remove(ref(db, "traps"));
+        await remove(ref(db, "marketEvents"));
+        await remove(ref(db, "players"));
+      } catch (err) {
+        console.error("Lỗi reset database khi chọn vai trò Host:", err);
+      }
+    }
   };
 
   const handleResetRole = () => {

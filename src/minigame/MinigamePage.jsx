@@ -5,6 +5,7 @@ import HostView from "./HostView";
 import PlayerView from "./PlayerView";
 import { normalizeGameState } from "./gameStateUtils";
 import "./minigame.css";
+import "./pixel-ui.css";
 
 import { IconPhone, IconDesktop } from "./icons";
 

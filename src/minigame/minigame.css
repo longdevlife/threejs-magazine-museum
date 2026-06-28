@@ -215,11 +215,11 @@
 
 .pixel-character {
   --skin: #ffd79b;
-  --hair: #5a3521;
+  --hair: #f4d154;      /* Blonde hair */
   --hat: transparent;
-  --shirt: var(--character-color);
-  --pants: #2f4f8f;
-  --shoe: #2c1e18;
+  --shirt: #ffffff;     /* White shirt */
+  --pants: #eceff1;     /* White pants/skirt */
+  --shoe: #37474f;      /* Dark grey/black shoes */
   --accent: #ffffff;
   display: block;
   height: 58px;
@@ -274,11 +274,20 @@
 
 .pixel-hat {
   background: var(--hat);
-  height: 7px;
-  left: 8px;
-  top: 2px;
-  width: 26px;
+  height: 3px;
+  left: 11px;
+  top: 6px;
+  width: 20px;
   z-index: 5;
+  border-radius: 3px 3px 0 0;
+}
+
+.pixel-hat::before {
+  left: -2px;
+}
+
+.pixel-hat::after {
+  right: -2px;
 }
 
 .pixel-body {
@@ -350,31 +359,55 @@
   display: none;
 }
 
+/* Character Specific Sprites */
+
+/* 1. MISA (Default) */
 .sprite-default {
-  --hair: #ffd54f;
-  --shirt: #ffe082;
-  --pants: #8d6e63;
-  --accent: #fff8c4;
+  --hat: #546e7a;
 }
-
-.sprite-shipper {
-  --hat: #ff2f78;
-  --hair: #3a2b2b;
-  --shirt: #ff2f78;
-  --pants: #25305c;
-  --accent: #fff1a6;
-}
-
-.sprite-shipper .pixel-hat::after {
-  background: #ff2f78;
+.sprite-default .pixel-hat::before,
+.sprite-default .pixel-hat::after {
   content: "";
-  height: 4px;
+  background: var(--hat);
+  border: 1px solid #3d2819;
+  height: 8px;
+  width: 4px;
   position: absolute;
-  right: -6px;
-  top: 3px;
-  width: 8px;
+  top: -2px;
 }
 
+/* 2. SHIPPER */
+.sprite-shipper {
+  --hat: #e91e63;
+}
+.sprite-shipper .pixel-hat {
+  height: 5px;
+  left: 10px;
+  top: 4px;
+  width: 22px;
+  border-radius: 0;
+}
+.sprite-shipper .pixel-hat::before,
+.sprite-shipper .pixel-hat::after {
+  content: "";
+  background: var(--hat);
+  border: 1px solid #3d2819;
+  height: 8px;
+  width: 4px;
+  position: absolute;
+  top: -2px;
+}
+.sprite-shipper .pixel-hat::after {
+  /* Visor/Brim for cap */
+  background: var(--hat);
+  border: none;
+  content: "";
+  height: 3px;
+  position: absolute;
+  right: -5px;
+  top: 2px;
+  width: 7px;
+}
 .sprite-shipper .pixel-pack {
   background: #00bcd4;
   border: 2px solid #3d2819;
@@ -386,22 +419,20 @@
   z-index: 0;
 }
 
+/* 3. STUDENT */
 .sprite-student {
   --hat: #56427d;
-  --hair: #3a2b2b;
-  --shirt: #8bc34a;
-  --pants: #263238;
-  --accent: #f7f0ff;
 }
-
 .sprite-student .pixel-hat {
   height: 5px;
   left: 6px;
   width: 30px;
+  border-radius: 0;
 }
-
 .sprite-student .pixel-hat::after {
+  /* Yellow tassel */
   background: #ffb700;
+  border: none;
   content: "";
   height: 9px;
   position: absolute;
@@ -409,31 +440,61 @@
   top: 4px;
   width: 3px;
 }
-
-.sprite-entrepreneur {
-  --hair: #5f4a37;
-  --shirt: #5f3d46;
-  --pants: #2d334f;
-  --accent: #ffd15c;
+.sprite-student .pixel-hair::before,
+.sprite-student .pixel-hair::after {
+  background: #4caf50;
+  border: 1px solid #3d2819;
+  content: "";
+  height: 8px;
+  position: absolute;
+  top: 5px;
+  width: 4px;
+}
+.sprite-student .pixel-hair::before {
+  left: -2px;
+}
+.sprite-student .pixel-hair::after {
+  right: -2px;
 }
 
-.sprite-entrepreneur .pixel-body::after {
-  background: #263238;
+/* 4. ENTREPRENEUR */
+.sprite-entrepreneur {
+  --hat: #37474f;
+}
+.sprite-entrepreneur .pixel-hat::before,
+.sprite-entrepreneur .pixel-hat::after {
   content: "";
-  height: 13px;
-  left: 8px;
+  background: var(--hat);
+  border: 1px solid #3d2819;
+  height: 8px;
+  width: 4px;
+  position: absolute;
+  top: -2px;
+}
+.sprite-entrepreneur .pixel-body::after {
+  background: #ffd15c;
+  content: "";
+  height: 10px;
+  left: 10px;
   position: absolute;
   top: 3px;
-  width: 8px;
+  width: 4px;
 }
 
+/* 5. SELLER */
 .sprite-seller {
-  --hair: #4a2f29;
-  --shirt: #ff4081;
-  --pants: #6d4c41;
-  --accent: #ffe0f0;
+  --hat: #ff4081;
 }
-
+.sprite-seller .pixel-hat::before,
+.sprite-seller .pixel-hat::after {
+  content: "";
+  background: var(--hat);
+  border: 1px solid #3d2819;
+  height: 8px;
+  width: 4px;
+  position: absolute;
+  top: -2px;
+}
 .sprite-seller .pixel-accessory {
   background: #ffd54f;
   border: 2px solid #3d2819;

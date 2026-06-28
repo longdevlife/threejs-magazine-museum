@@ -6,6 +6,8 @@ import PlayerView from "./PlayerView";
 import { normalizeGameState } from "./gameStateUtils";
 import "./minigame.css";
 
+import { IconPhone, IconDesktop } from "./icons";
+
 export const MinigamePage = () => {
   // Vai trò: 'host' | 'player' | null
   const [role, setRole] = useState(() => {
@@ -83,21 +85,32 @@ export const MinigamePage = () => {
           <p className="minigame-subtitle">Sự vận động của Cạnh tranh & Độc quyền trong Nền kinh tế số</p>
           
           <div className="role-buttons">
-            <div className="role-card role-player" onClick={() => handleSelectRole("player")}>
-              <div className="role-icon">📱</div>
+            <div className="role-card role-player group" onClick={() => handleSelectRole("player")}>
+              <div className="role-icon transition-transform duration-300 group-hover:scale-110 text-cyan-400">
+                <IconPhone className="w-16 h-16" />
+              </div>
               <div className="role-name">Người Chơi</div>
               <div className="role-desc">Dành cho sinh viên cả lớp. Quét mã QR, nhập vai chủ shop handmade, di chuyển nhặt sách và né bẫy trên điện thoại.</div>
             </div>
 
-            <div className="role-card role-host" onClick={() => handleSelectRole("host")}>
-              <div className="role-icon">🖥️</div>
+            <div className="role-card role-host group" onClick={() => handleSelectRole("host")}>
+              <div className="role-icon transition-transform duration-300 group-hover:scale-110 text-red-500">
+                <IconDesktop className="w-16 h-16" />
+              </div>
               <div className="role-name">Ban Tổ Chức (Host/MC)</div>
               <div className="role-desc">Dành cho nhóm thuyết trình. Quản lý trạng thái game, trình chiếu câu hỏi và bảng xếp hạng realtime lên máy chiếu.</div>
             </div>
           </div>
 
-          <div style={{ marginTop: "30px", fontSize: "0.85rem", color: dbConnected ? "#39ff14" : "#ff3344" }}>
-            Trạng thái máy chủ: {dbConnected ? "● ĐÃ KẾT NỐI (Realtime)" : "○ MẤT KẾT NỐI (Vui lòng cấu hình Firebase)"}
+          <div style={{ marginTop: "30px", fontSize: "0.85rem", color: dbConnected ? "var(--neon-green)" : "var(--neon-red)", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ 
+              width: "8px", 
+              height: "8px", 
+              borderRadius: "50%", 
+              background: dbConnected ? "var(--neon-green)" : "var(--neon-red)",
+              boxShadow: dbConnected ? "0 0 10px var(--neon-green)" : "0 0 10px var(--neon-red)"
+            }} />
+            Trạng thái máy chủ: {dbConnected ? "ĐÃ KẾT NỐI (Realtime)" : "MẤT KẾT NỐI (Vui lòng cấu hình Firebase)"}
           </div>
         </div>
       </div>

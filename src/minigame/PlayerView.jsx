@@ -3,9 +3,13 @@ import { ref, set, update, onValue, get } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { gameQuestions } from "./gameQuestions";
 import RpgGamePlay from "./RpgGamePlay";
+import { CHARACTER_OPTIONS, getCharacterOption } from "./characterOptions";
 
 const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnected, onResetRole }) => {
   const [tempName, setTempName] = useState(playerName);
+  const [selectedCharacterId, setSelectedCharacterId] = useState(() => {
+    return localStorage.getItem("minigame_character_id") || "default";
+  });
   const [isJoined, setIsJoined] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [hasAnswered, setHasAnswered] = useState(false);
@@ -86,12 +90,16 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     if (!tempName.trim()) return;
 
     const cleanName = tempName.trim().substring(0, 15);
+    const selectedCharacter = getCharacterOption(selectedCharacterId);
     setPlayerName(cleanName);
     localStorage.setItem("minigame_player_name", cleanName);
+    localStorage.setItem("minigame_character_id", selectedCharacter.id);
 
     // Lưu người chơi mới lên Firebase
     await set(ref(db, `players/${playerId}`), {
       name: cleanName,
+      character: selectedCharacter.id,
+      color: selectedCharacter.color,
       score: 0,
       capital: 20000000,
       streak: 0,
@@ -149,7 +157,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
 
         // Streak bonus
         if (newStreak >= 3) {
-          pointsGained += 75;
+          pointsGained += 50; // Thưởng chuỗi từ câu thứ 3 trở đi
         }
       } else {
         newStreak = 0;
@@ -170,7 +178,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
 
     // Tính toán các giá trị mới
     const newScore = Math.max(0, playerInfo.score + pointsGained);
-    const newCapital = Math.max(0, playerInfo.capital + capitalChange);
+    const newCapital = Math.max(0, (playerInfo.capital ?? 20000000) + capitalChange);
     const newIsBankrupt = newCapital <= 0;
 
     // Cập nhật thông tin lên Firebase
@@ -194,10 +202,13 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     return rank !== -1 ? rank + 1 : "-";
   };
 
+  const selectedCharacter = getCharacterOption(selectedCharacterId);
+  const currentCharacter = getCharacterOption(playerInfo.character);
+
   // 1. CHƯA ĐĂNG KÝ TÊN -> HIỂN THỊ FORM ĐĂNG KÝ
   if (!isJoined) {
     return (
-      <div className="minigame-panel" style={{ maxWidth: "450px" }}>
+      <div className="minigame-panel" style={{ maxWidth: "550px" }}>
         <h2 className="minigame-title" style={{ fontSize: "2rem" }}>THAM GIA CHƠI</h2>
         <p className="minigame-subtitle" style={{ fontSize: "1.1rem" }}>Đăng ký mở shop quà tặng và bắt đầu cuộc sinh tồn</p>
         
@@ -214,8 +225,40 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
               required
             />
           </div>
+
+          <div className="input-group" style={{ marginTop: "20px" }}>
+            <label className="input-label">Chọn nhân vật đại diện:</label>
+            <div className="character-grid">
+              {CHARACTER_OPTIONS.map((char) => {
+                const isSelected = selectedCharacterId === char.id;
+                return (
+                  <div 
+                    key={char.id}
+                    className={`character-option ${isSelected ? "selected" : ""}`}
+                    style={{ '--character-color': char.color }}
+                    onClick={() => setSelectedCharacterId(char.id)}
+                  >
+                    <div className={`pixel-character ${char.spriteClass}`}>
+                      <span className="pixel-hat"></span>
+                      <span className="pixel-hair"></span>
+                      <span className="pixel-head"></span>
+                      <span className="pixel-body"></span>
+                      <span className="pixel-arm pixel-arm-left"></span>
+                      <span className="pixel-arm pixel-arm-right"></span>
+                      <span className="pixel-leg pixel-leg-left"></span>
+                      <span className="pixel-leg pixel-leg-right"></span>
+                      <span className="pixel-pack"></span>
+                      <span className="pixel-accessory"></span>
+                    </div>
+                    <div className="character-name">{char.icon} {char.label}</div>
+                    <div className="character-desc">{char.description}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           
-          <button type="submit" className="btn-cyber btn-cyber-blue" style={{ marginTop: "10px" }}>
+          <button type="submit" className="btn-cyber btn-cyber-blue" style={{ marginTop: "20px" }}>
             Tham gia ngay
           </button>
         </form>
@@ -239,6 +282,11 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
         <p style={{ color: "var(--neon-gold)", fontWeight: "600", fontSize: "1.1rem", margin: "10px 0" }}>
           Xin chào, {playerName}!
         </p>
+
+        <div className="selected-character-badge" style={{ '--character-color': currentCharacter.color }}>
+          <span>Nhân vật: {currentCharacter.icon} {currentCharacter.label}</span>
+        </div>
+
         <p style={{ color: "#8b8680", fontSize: "0.95rem", lineHeight: "1.6" }}>
           Bạn đã đăng ký shop thành công. Vui lòng nhìn lên màn hình máy chiếu của cả lớp. MC sẽ sớm bắt đầu trò chơi!
         </p>
@@ -313,7 +361,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: "0.8rem", color: "#8b8680", textTransform: "uppercase" }}>Vốn Hiện Tại</div>
             <div style={{ fontSize: "1.4rem", fontWeight: "bold", color: playerInfo.isBankrupt ? "var(--neon-red)" : "var(--neon-green)" }}>
-              {playerInfo.isBankrupt ? "💀 PHÁ SẢN" : `${playerInfo.capital.toLocaleString()}đ`}
+              {playerInfo.isBankrupt ? "💀 PHÁ SẢN" : `${(playerInfo.capital ?? 0).toLocaleString()}đ`}
             </div>
             {capitalFeedback && (
               <div style={{ fontSize: "0.8rem", color: isCorrect ? "var(--neon-green)" : "var(--neon-red)", marginTop: "2px" }}>{capitalFeedback}</div>
@@ -395,7 +443,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#8b8680" }}>Vốn còn lại:</span>
             <strong style={{ color: playerInfo.isBankrupt ? "var(--neon-red)" : "var(--neon-green)", fontSize: "1.2rem" }}>
-              {playerInfo.capital.toLocaleString()}đ
+              {(playerInfo.capital ?? 0).toLocaleString()}đ
             </strong>
           </div>
         </div>

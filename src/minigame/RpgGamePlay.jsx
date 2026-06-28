@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { ref, update, remove } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { gameQuestions } from "./gameQuestions";
+import { getCharacterOption } from "./characterOptions";
 
 const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected }) => {
   const iframeRef = useRef(null);
+  const selectedCharacter = getCharacterOption(playerInfo.character);
   
   // Trạng thái Popup câu hỏi
   const [currentActiveQ, setCurrentActiveQ] = useState(null);
@@ -33,7 +35,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected }) => {
         // Phạt tiền và điểm
         const penaltyCapital = -3000000;
         const penaltyScore = -50;
-        const newCapital = Math.max(0, playerInfo.capital + penaltyCapital);
+        const newCapital = Math.max(0, (playerInfo.capital ?? 20000000) + penaltyCapital);
         const newScore = Math.max(0, playerInfo.score + penaltyScore);
 
         update(ref(db, `players/${playerId}`), {
@@ -104,7 +106,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected }) => {
     }
 
     const newScore = Math.max(0, playerInfo.score + ptsGained);
-    const newCapital = Math.max(0, playerInfo.capital + capGained);
+    const newCapital = Math.max(0, (playerInfo.capital ?? 20000000) + capGained);
 
     await update(ref(db, `players/${playerId}`), {
       score: newScore,
@@ -124,7 +126,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected }) => {
         <div style={{ textAlign: "center", flex: 1 }}>
           <div style={{ fontSize: "9px", color: "#795548", fontWeight: "bold", textTransform: "uppercase" }}>Vốn Doanh Nghiệp</div>
           <div style={{ fontSize: "15px", fontWeight: "bold", color: playerInfo.isBankrupt ? "#d32f2f" : "#388e3c" }}>
-            {playerInfo.isBankrupt ? "💀 PHÁ SẢN" : `${playerInfo.capital.toLocaleString()}đ`}
+            {playerInfo.isBankrupt ? "💀 PHÁ SẢN" : `${(playerInfo.capital ?? 0).toLocaleString()}đ`}
           </div>
         </div>
         <div style={{ width: "2px", background: "#a16b47", margin: "0 10px" }} />
@@ -136,6 +138,13 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected }) => {
         <div style={{ textAlign: "center", flex: 1 }}>
           <div style={{ fontSize: "9px", color: "#795548", fontWeight: "bold", textTransform: "uppercase" }}>Chuỗi Streak</div>
           <div style={{ fontSize: "15px", fontWeight: "bold", color: "#f57c00" }}>{playerInfo.streak} 🔥</div>
+        </div>
+        <div style={{ width: "2px", background: "#a16b47", margin: "0 10px" }} />
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ fontSize: "9px", color: "#795548", fontWeight: "bold", textTransform: "uppercase" }}>Nhân Vật</div>
+          <div style={{ fontSize: "15px", fontWeight: "bold", color: selectedCharacter.color }}>
+            {selectedCharacter.icon} {selectedCharacter.label}
+          </div>
         </div>
       </div>
 
@@ -155,7 +164,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected }) => {
         <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", border: "4px solid #333333", borderRadius: "8px", overflow: "hidden", background: "#000" }}>
           <iframe 
             ref={iframeRef}
-            src={`/rpg/index.html?role=player&id=${playerId}&name=${encodeURIComponent(playerName)}`}
+            src={`/rpg/index.html?role=player&id=${playerId}&name=${encodeURIComponent(playerName)}&character=${encodeURIComponent(selectedCharacter.id)}&color=${encodeURIComponent(selectedCharacter.color)}`}
             style={{ width: "100%", height: "100%", border: "none", display: "block" }}
             title="Phaser RPG"
           />

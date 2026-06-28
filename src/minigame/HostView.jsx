@@ -484,14 +484,14 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                 {marketEvents.map((event) => (
                   <button
                     key={event.type}
-                    className="btn-market-flat"
+                    className="btn-market-flat pixel-event-button"
                     style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "10px 14px", borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(255,255,255,0.03)", background: "rgba(255,255,255,0.02)", width: "100%" }}
                     onClick={() => handleMarketEvent(event.type)}
                   >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "bold", fontSize: "0.8rem", color: "#fff" }}>
+                    <span className="pixel-event-title" style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "bold", fontSize: "0.8rem", color: "#fff" }}>
                       <IconBook className="w-4 h-4 text-amber-500" /> {event.label}
                     </span>
-                    <span style={{ color: "#8b8680", fontSize: "0.7rem" }}>{event.hint}</span>
+                    <span className="pixel-event-hint" style={{ color: "#8b8680", fontSize: "0.7rem" }}>{event.hint}</span>
                   </button>
                 ))}
               </div>
@@ -505,14 +505,14 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                   {phase2Events.map((event) => (
                     <button
                       key={event.type}
-                      className="btn-market-flat"
+                      className="btn-market-flat pixel-event-button"
                       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "10px 14px", borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(0,137,123,0.15)", background: "rgba(0,137,123,0.06)", width: "100%" }}
                       onClick={() => handleMarketEvent(event.type)}
                     >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "bold", fontSize: "0.8rem", color: "#00897b" }}>
+                      <span className="pixel-event-title" style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "bold", fontSize: "0.8rem", color: "#00897b" }}>
                         <IconUser className="w-4 h-4" /> {event.label}
                       </span>
-                      <span style={{ color: "#8b8680", fontSize: "0.7rem" }}>{event.hint}</span>
+                      <span className="pixel-event-hint" style={{ color: "#8b8680", fontSize: "0.7rem" }}>{event.hint}</span>
                     </button>
                   ))}
                 </div>

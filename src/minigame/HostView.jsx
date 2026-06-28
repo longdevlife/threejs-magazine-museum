@@ -5,6 +5,13 @@ import { situations, PHASE_CONFIGS } from "./situations";
 import { applyPlayerDelta } from "./gameStateUtils";
 import { checkMapCollisions, WORLD_WIDTH, WORLD_HEIGHT } from "./rpgEngine";
 import {
+  PHASE_ECONOMY_MIX,
+  getHazardDefinition,
+  getOpportunityDefinition,
+  scaleDelta,
+} from "./economyGameContent";
+import { pickSpawnPoint, pickWeighted } from "./spawnUtils";
+import {
   IconPhone,
   IconDesktop,
   IconLeaf,
@@ -46,9 +53,11 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   const platformFeeTimer = useRef(null);
   const platformFeeInFlight = useRef(false);
   const [books, setBooks] = useState({});
+  const booksRef = useRef({});
 
   // Cấu hình bẫy động theo phase
-  const getInitialTraps = (count, speed) => {
+  const getInitialTraps = (phaseKey) => {
+    const mix = PHASE_ECONOMY_MIX[phaseKey] || PHASE_ECONOMY_MIX.phase_1;
     const traps = {};
     const positions = [
       { x: 480, y: 300, axis: "y" },
@@ -58,20 +67,30 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
       { x: 300, y: 500, axis: "y" },
       { x: 900, y: 400, axis: "x" },
     ];
-    for (let i = 0; i < Math.min(count, positions.length); i++) {
+    for (let i = 0; i < Math.min(mix.hazardCount, positions.length); i++) {
       const p = positions[i];
+      const selected = pickWeighted(mix.hazards);
+      const hazard = getHazardDefinition(selected.type);
       traps[`trap_${i + 1}`] = {
         id: `trap_${i + 1}`,
+        type: hazard.type,
+        label: hazard.shortLabel,
+        message: hazard.message,
+        score: scaleDelta(hazard.score, mix.hazardScale),
+        capital: scaleDelta(hazard.capital, mix.hazardScale),
+        effect: hazard.effect,
+        durationMs: hazard.durationMs,
+        color: hazard.color,
         x: p.x,
         y: p.y,
-        ...(p.axis === "y" ? { dy: speed * (i % 2 === 0 ? 1 : -1) } : { dx: speed * (i % 2 === 0 ? 1 : -1) }),
-        size: 35,
+        ...(p.axis === "y" ? { dy: mix.hazardSpeed * (i % 2 === 0 ? 1 : -1) } : { dx: mix.hazardSpeed * (i % 2 === 0 ? 1 : -1) }),
+        size: 38,
       };
     }
     return traps;
   };
 
-  const localTraps = useRef(getInitialTraps(2, 3.5));
+  const localTraps = useRef(getInitialTraps("phase_1"));
 
   // QR
   useEffect(() => {
@@ -82,7 +101,11 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   // Lắng nghe players
   useEffect(() => {
     const unsubPlayers = onValue(ref(db, "players"), (s) => setPlayers(s.val() || {}));
-    const unsubBooks = onValue(ref(db, "books"), (s) => setBooks(s.val() || {}));
+    const unsubBooks = onValue(ref(db, "books"), (s) => {
+      const val = s.val() || {};
+      setBooks(val);
+      booksRef.current = val;
+    });
     return () => { unsubPlayers(); unsubBooks(); };
   }, []);
 
@@ -147,7 +170,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   useEffect(() => {
     requestRef.current = requestAnimationFrame(hostLoop);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [books, gameState.status]);
+  }, [gameState.status]);
 
   const moveTrapsLocal = () => {
     Object.values(localTraps.current).forEach((t) => {
@@ -163,22 +186,25 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   };
 
   const maintainBooks = () => {
-    const config = PHASE_CONFIGS[gameState.status];
-    if (!config) return;
-    const currentBooks = Object.keys(books);
-    if (currentBooks.length < config.maxBooks) {
-      let bx = Math.floor(Math.random() * (WORLD_WIDTH - 150)) + 70;
-      let by = Math.floor(Math.random() * (WORLD_HEIGHT - 150)) + 70;
-      let attempts = 0;
-      while (checkMapCollisions(bx, by, 24) && attempts < 25) {
-        bx = Math.floor(Math.random() * (WORLD_WIDTH - 150)) + 70;
-        by = Math.floor(Math.random() * (WORLD_HEIGHT - 150)) + 70;
-        attempts++;
-      }
-      if (attempts < 25) {
-        set(ref(db, `books/book_${Date.now()}`), { x: bx, y: by });
-      }
-    }
+    const mix = PHASE_ECONOMY_MIX[gameState.status];
+    if (!mix) return;
+    if (Object.keys(booksRef.current).length >= mix.maxOpportunities) return;
+
+    const selected = pickWeighted(mix.opportunities);
+    const opportunity = getOpportunityDefinition(selected.type);
+    const point = pickSpawnPoint({ preferredZones: mix.preferredZones, radius: 24 });
+
+    set(ref(db, `books/opportunity_${Date.now()}`), {
+      x: point.x,
+      y: point.y,
+      type: opportunity.type,
+      label: opportunity.shortLabel,
+      message: opportunity.message,
+      score: scaleDelta(opportunity.score, mix.opportunityScale),
+      capital: scaleDelta(opportunity.capital, mix.opportunityScale),
+      color: opportunity.color,
+      zone: point.zone,
+    });
   };
 
   const playerList = Object.entries(players).map(([id, info]) => ({ id, ...info }));
@@ -206,7 +232,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     await remove(ref(db, "traps"));
 
     // Cập nhật bẫy theo phase
-    localTraps.current = getInitialTraps(config.trapCount, config.trapSpeed);
+    localTraps.current = getInitialTraps(phaseKey);
     await update(ref(db, "traps"), localTraps.current);
 
     updates["gameState"] = {
@@ -325,12 +351,12 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
               <ol style={{ paddingLeft: "20px", color: "#8b8680", lineHeight: "1.7" }}>
                 <li>Di chuyển nhân vật bằng <b>WASD/mũi tên</b> (PC) hoặc <b>D-pad</b> (Mobile)</li>
                 <li style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                  Nhặt <b>sách vàng <IconBook className="w-4 h-4 text-amber-500 inline" /></b> để kiếm vốn và điểm
+                  Thu thập <b>cơ hội kinh doanh <IconBook className="w-4 h-4 text-amber-500 inline" /></b>: đơn hàng, review, khách quen, kỹ năng AI
                 </li>
                 <li style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                  Né tránh <b>vòng tròn sét <IconBolt className="w-4 h-4 text-red-500 inline" /></b> để không bị trừ vốn
+                  Né tránh <b>rủi ro nền tảng <IconBolt className="w-4 h-4 text-red-500 inline" /></b>: phí sàn, bóp tương tác, voucher bắt buộc, Mall sao chép
                 </li>
-                <li>Trải qua <b>3 giai đoạn kinh tế</b> với độ khó tăng dần</li>
+                <li>Phase 2 và 3 <b>khó hơn có chủ đích</b>: đó là cảm giác thị trường chuyển sang độc quyền</li>
               </ol>
               <div className="player-count" style={{ marginTop: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
                 Đã tham gia: <span style={{ fontFamily: "var(--font-mono)", fontWeight: "bold" }}>{totalPlayers}</span> người chơi

@@ -163,6 +163,32 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         await incrementProgress(`hit_${hazard.type || "hazard"}`);
         addFloatingText(hazard.message || `${penScore}đ Rủi ro`, hazard.color || "#c5272d");
       }
+
+      // C. Tìm thấy Khách Ruột (Phase 2 NPC)
+      if (e.data.type === "FOUND_LOYAL_CUSTOMER") {
+        await incrementProgress("loyal_customer_found");
+        await runTransaction(
+          ref(db, `players/${playerId}/progress/${gameState.status}/loyal_customer_found_at`),
+          (current) => current || Date.now(),
+          { applyLocally: false }
+        );
+        addFloatingText("Đã giữ được khách ruột!", "#00897b");
+      }
+
+      // D. Thoát qua Cổng Thoát (Phase 3)
+      if (e.data.type === "ESCAPED_GATE") {
+        await incrementProgress("escaped_gate");
+        await runTransaction(
+          ref(db, `players/${playerId}`),
+          (player) => ({
+            ...player,
+            escaped: true,
+            escapedAt: player?.escapedAt || Date.now(),
+          }),
+          { applyLocally: false }
+        );
+        addFloatingText("Đã thoát khỏi nền tảng!", "#c9922a");
+      }
     };
 
     window.addEventListener("message", handleMessage);

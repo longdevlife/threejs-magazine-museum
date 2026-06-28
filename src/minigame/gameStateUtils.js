@@ -35,31 +35,44 @@ export const applyPhaseOneGate = (player) => {
   if (!player) return player;
 
   const orders = Number(player.progress?.phase_1?.order) || 0;
+  const reviews = Number(player.progress?.phase_1?.review) || 0;
+  const qualified = orders >= 5 && reviews >= 2;
 
-  if (orders < 3) {
+  if (!qualified) {
     return {
       ...player,
       capital: 0,
       isBankrupt: true,
-      eliminatedReason: "Không đạt tối thiểu 3 đơn hàng ở Phase 1",
+      eliminatedReason: "Không đạt 5 đơn hàng và 2 review ở Phase 1",
       phaseOneQualified: false,
-    };
-  }
-
-  if (orders >= 5 && !player.phaseOneBonusApplied) {
-    return {
-      ...player,
-      score: (player.score || 0) + 50,
-      capital: (player.capital || 0) + 1_000_000,
-      isBankrupt: Boolean(player.isBankrupt),
-      phaseOneQualified: true,
-      phaseOneBonusApplied: true,
     };
   }
 
   return {
     ...player,
     isBankrupt: Boolean(player.isBankrupt),
-    phaseOneQualified: false,
+    phaseOneQualified: true,
   };
 };
+
+export const applyPhaseTwoGate = (player) => {
+  if (!player) return player;
+  const found = Number(player.progress?.phase_2?.loyal_customer_found) || 0;
+
+  if (found < 1) {
+    return {
+      ...player,
+      capital: 0,
+      isBankrupt: true,
+      eliminatedReason: "Không tìm được khách ruột trong 60 giây",
+      phaseTwoQualified: false,
+    };
+  }
+
+  return {
+    ...player,
+    isBankrupt: Boolean(player.isBankrupt),
+    phaseTwoQualified: true,
+  };
+};
+

@@ -320,14 +320,20 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
               <Leaderboard />
 
               <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                {currentConfig.recap && (
+                  <div className="mission-card" style={{ marginTop: "0", textAlign: "left" }}>
+                    <div className="mission-label">MC CHỐT Ý</div>
+                    <div className="mission-text">{currentConfig.recap}</div>
+                  </div>
+                )}
                 {gameState.status === "phase_1" && (
                   <button className="btn-cyber" style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }} onClick={() => handleTriggerSituation(1)}>
-                    <IconBolt className="w-4 h-4 text-yellow-500" /> Kích hoạt Tình huống 1
+                    <IconBolt className="w-4 h-4 text-yellow-500" /> Chốt Phase 1 & mở Tình huống 1
                   </button>
                 )}
                 {gameState.status === "phase_2" && (
                   <button className="btn-cyber" style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }} onClick={() => handleTriggerSituation(2)}>
-                    <IconBolt className="w-4 h-4 text-yellow-500" /> Kích hoạt Tình huống 2
+                    <IconBolt className="w-4 h-4 text-yellow-500" /> Chốt Phase 2 & mở Tình huống 2
                   </button>
                 )}
                 {gameState.status === "phase_3" && (

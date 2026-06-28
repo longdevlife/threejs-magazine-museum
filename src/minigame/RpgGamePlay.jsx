@@ -169,7 +169,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         addFloatingText(hazard.message || `${penScore}đ Rủi ro`, hazard.color || "#c5272d");
       }
 
-      // C. Tìm thấy Khách Ruột (Phase 2 NPC)
+      // C. Tìm thấy Khách Ruột (Phase 2 NPC) — NPC vẫn ở đó cho người khác tìm
       if (e.data.type === "FOUND_LOYAL_CUSTOMER") {
         await incrementProgress("loyal_customer_found");
         await runTransaction(
@@ -177,7 +177,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
           (current) => current || Date.now(),
           { applyLocally: false }
         );
-        addFloatingText("Đã giữ được khách ruột!", "#00897b");
+        addFloatingText("🎉 Tìm thấy Khách Ruột!", "#00897b");
       }
 
       // D. Thoát qua Cổng Thoát (Phase 3)

@@ -126,22 +126,20 @@ export class Main extends Phaser.Scene {
     // 1. Khởi tạo người chơi
     this.addPlayer();
 
-    // 2. Thiết lập Camera
-    this.cameras.main.setBounds(
-      0,
-      0,
-      this.tilemap.widthInPixels,
-      this.tilemap.heightInPixels,
-    );
-
+    // 2. Thiết lập Camera tùy theo vai trò
     if (playerRole === 'host') {
       this.cameras.main.setZoom(
-        0.85,
-      ); /* Tăng zoom Host để bản đồ to rõ trên máy chiếu */
+        0.7,
+      ); /* Zoom 0.7 để chiều cao bản đồ 1280px khớp hoàn hảo với chiều cao viewport 900px */
       this.player.setVisible(false);
       this.player.body.enable = false;
 
-      this.cameras.main.startFollow(this.player, false);
+      // Căn giữa camera vào tâm bản đồ 1280x1280 (tức là tọa độ x: 640, y: 640)
+      this.cameras.main.centerOn(
+        this.tilemap.widthInPixels / 2,
+        this.tilemap.heightInPixels / 2,
+      );
+
       this.hostCursors = this.input.keyboard!.createCursorKeys();
       this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
         if (pointer.isDown) {
@@ -153,10 +151,16 @@ export class Main extends Phaser.Scene {
       });
       this.hostWorld = new HostWorld(this, this.worldLayer);
     } else {
+      this.cameras.main.setBounds(
+        0,
+        0,
+        this.tilemap.widthInPixels,
+        this.tilemap.heightInPixels,
+      );
       this.cameras.main.startFollow(this.player);
       this.cameras.main.setZoom(
-        1.15,
-      ); /* Điều chỉnh zoom Player hợp lý (1.15) để vừa nhìn rõ nhân vật/chữ vừa bao quát được bản đồ */
+        1.5,
+      ); /* Điều chỉnh zoom Player về 1.5 theo ý kiến người dùng */
     }
 
     // Lắng nghe sự kiện từ React ngoài
@@ -189,22 +193,22 @@ export class Main extends Phaser.Scene {
 
     const nameText = this.add.text(
       spawnPoint.x!,
-      spawnPoint.y! - 40,
+      spawnPoint.y! - 30,
       `${playerName} (Tôi)`,
       {
-        fontSize: '32px',
+        fontSize: '20px',
         fontFamily: 'VT323',
         color: '#ffd54f',
         fontStyle: 'bold',
         backgroundColor: 'rgba(0,0,0,0.65)',
-        padding: { x: 8, y: 4 },
+        padding: { x: 6, y: 3 },
       },
     );
     nameText.setDepth(Depth.AbovePlayer);
     nameText.setOrigin(0.5, 0.5);
 
     this.events.on('update', () => {
-      nameText.setPosition(this.player.x, this.player.y - 40);
+      nameText.setPosition(this.player.x, this.player.y - 30);
     });
 
     this.physics.add.collider(this.player, this.worldLayer);
@@ -239,14 +243,14 @@ export class Main extends Phaser.Scene {
 
           const newLabel = this.add.text(
             pInfo.x,
-            pInfo.y - 38,
+            pInfo.y - 30,
             pInfo.name || 'Ẩn danh',
             {
-              fontSize: '26px',
+              fontSize: '16px',
               fontFamily: 'VT323',
               color: '#ffffff',
               backgroundColor: 'rgba(0,0,0,0.5)',
-              padding: { x: 6, y: 3 },
+              padding: { x: 5, y: 2 },
             },
           );
           newLabel.setDepth(Depth.AbovePlayer);
@@ -257,7 +261,7 @@ export class Main extends Phaser.Scene {
         }
 
         other.sprite.setPosition(pInfo.x, pInfo.y);
-        other.label.setPosition(pInfo.x, pInfo.y - 38);
+        other.label.setPosition(pInfo.x, pInfo.y - 30);
 
         if (pInfo.direction) {
           other.sprite.anims.play(`player_${pInfo.direction}`, true);
@@ -300,13 +304,13 @@ export class Main extends Phaser.Scene {
           icon.fillStyle(0xffffff, 0.9);
           icon.fillCircle(0, 0, 4);
 
-          const bookLabel = this.add.text(0, -42, book.label || 'Cơ hội', {
-            fontSize: '26px',
+          const bookLabel = this.add.text(0, -30, book.label || 'Cơ hội', {
+            fontSize: '16px',
             fontFamily: 'VT323',
             color: '#ffffff',
             fontStyle: 'bold',
             backgroundColor: 'rgba(0,0,0,0.65)',
-            padding: { x: 6, y: 3 },
+            padding: { x: 5, y: 2 },
           });
           bookLabel.setOrigin(0.5, 0.5);
 
@@ -336,6 +340,7 @@ export class Main extends Phaser.Scene {
         if (!booksData[id]) {
           val.destroy();
           this.localBooks.delete(id);
+          this.collidedBooks.delete(id);
         }
       });
     });
@@ -367,27 +372,25 @@ export class Main extends Phaser.Scene {
           warning.strokeCircle(0, 0, radius + 14);
 
           const trapGraphics = this.add.graphics();
-          trapGraphics.lineStyle(2.5, trapColor, 0.88);
-          trapGraphics.strokeCircle(0, 0, radius);
-          trapGraphics.fillStyle(trapColor, 0.18);
-          trapGraphics.fillCircle(0, 0, radius);
+          this.drawTrapPixelArt(trapGraphics, trap.type);
 
           const trapLabel = this.add.text(
             0,
-            -radius - 24,
+            -radius - 18,
             Date.now() < activeAt
               ? trap.warningLabel || 'Rủi ro đang tới'
               : trap.label || 'Rủi ro',
             {
-              fontSize: '26px',
+              fontSize: '16px',
               fontFamily: 'VT323',
               color: '#ffffff',
               fontStyle: 'bold',
               backgroundColor: 'rgba(0,0,0,0.68)',
-              padding: { x: 6, y: 3 },
+              padding: { x: 5, y: 2 },
             },
           );
           trapLabel.setOrigin(0.5, 0.5);
+          trapLabel.setVisible(false); // Ẩn hoàn toàn bảng tên bẫy theo yêu cầu
 
           container.add([warning, trapGraphics, trapLabel]);
           container.setDepth(Depth.AbovePlayer);
@@ -455,54 +458,57 @@ export class Main extends Phaser.Scene {
       });
     });
 
-    // D. Lắng nghe NPC (Khách Ruột - Phase 2)
+    // D. Lắng nghe NPC (Khách Ruột - Phase 2) — dùng sprite nhân vật, KHÔNG có label
     const npcsRef = ref(db, 'npcs');
     onValue(npcsRef, (snapshot) => {
-      const npcsData = (snapshot.val() || {}) as Record<string, { x: number; y: number; label?: string }>;
+      const npcsData = (snapshot.val() || {}) as Record<
+        string,
+        { x: number; y: number; label?: string }
+      >;
 
       Object.entries(npcsData).forEach(([id, npc]) => {
         if (!this.localNpcs.has(id)) {
           const container = this.add.container(npc.x, npc.y);
 
-          // NPC marker: teal colored person icon
-          const glow = this.add.graphics();
-          glow.fillStyle(0x00897b, 0.3);
-          glow.fillCircle(0, 0, 20);
+          // Dùng sprite nhân vật giống player — trông tự nhiên, khó phát hiện
+          const npcSprite = this.add.sprite(
+            0,
+            0,
+            key.atlas.player,
+            'misa-front',
+          );
+          npcSprite.setTint(0x80cbc4); // Teal nhạt để phân biệt nhẹ nhưng không quá lộ
 
-          const body_g = this.add.graphics();
-          body_g.fillStyle(0x00897b, 1);
-          body_g.fillCircle(0, -6, 8); // head
-          body_g.fillRoundedRect(-8, 2, 16, 14, 4); // body
-          body_g.lineStyle(2, 0xffffff, 0.9);
-          body_g.strokeCircle(0, -6, 8);
-
-          const npcLabel = this.add.text(0, -34, npc.label || 'Khách Ruột', {
-            fontSize: '22px',
-            fontFamily: 'VT323',
-            color: '#00e5cc',
-            backgroundColor: 'rgba(0,0,0,0.65)',
-            padding: { x: 6, y: 3 },
-          });
-          npcLabel.setOrigin(0.5, 0.5);
-
-          container.add([glow, body_g, npcLabel]);
+          container.add([npcSprite]);
           container.setDepth(Depth.AbovePlayer);
 
           this.physics.world.enable(container);
           const phBody = container.body as Phaser.Physics.Arcade.Body;
           phBody.setCircle(16, -16, -16);
 
+          if (this.collidedNpcs.has(id)) {
+            container.setVisible(false);
+          }
+
           if (playerRole !== 'host') {
             this.physics.add.overlap(this.player, container, () => {
               if (this.collidedNpcs.has(id)) return;
               this.collidedNpcs.add(id);
-              window.parent.postMessage({ type: 'FOUND_LOYAL_CUSTOMER', npcId: id }, '*');
+              container.setVisible(false); // Ẩn ngay lập tức trên máy người chơi này
+              window.parent.postMessage(
+                { type: 'FOUND_LOYAL_CUSTOMER', npcId: id },
+                '*',
+              );
             });
           }
 
           this.localNpcs.set(id, container);
         } else {
-          this.localNpcs.get(id)!.setPosition(npc.x, npc.y);
+          const container = this.localNpcs.get(id)!;
+          container.setPosition(npc.x, npc.y);
+          if (this.collidedNpcs.has(id)) {
+            container.setVisible(false);
+          }
         }
       });
 
@@ -510,6 +516,7 @@ export class Main extends Phaser.Scene {
         if (!npcsData[id]) {
           val.destroy();
           this.localNpcs.delete(id);
+          this.collidedNpcs.delete(id);
         }
       });
     });
@@ -517,7 +524,10 @@ export class Main extends Phaser.Scene {
     // E. Lắng nghe Gate (Cổng Thoát - Phase 3)
     const gatesRef = ref(db, 'gates');
     onValue(gatesRef, (snapshot) => {
-      const gatesData = (snapshot.val() || {}) as Record<string, { x: number; y: number; label?: string; activeAt?: number }>;
+      const gatesData = (snapshot.val() || {}) as Record<
+        string,
+        { x: number; y: number; label?: string; activeAt?: number }
+      >;
 
       Object.entries(gatesData).forEach(([id, gate]) => {
         if (!this.localGates.has(id)) {
@@ -536,12 +546,12 @@ export class Main extends Phaser.Scene {
           portal.fillStyle(0xffd54f, 0.3);
           portal.fillCircle(0, 0, 10);
 
-          const gateLabel = this.add.text(0, -42, 'Cổng đang mở...', {
-            fontSize: '22px',
+          const gateLabel = this.add.text(0, -30, 'Cổng đang mở...', {
+            fontSize: '16px',
             fontFamily: 'VT323',
             color: '#ffd54f',
             backgroundColor: 'rgba(0,0,0,0.65)',
-            padding: { x: 6, y: 3 },
+            padding: { x: 5, y: 2 },
           });
           gateLabel.setOrigin(0.5, 0.5);
 
@@ -560,7 +570,10 @@ export class Main extends Phaser.Scene {
               const now = Date.now();
               if (now < (container.getData('activeAt') || 0)) return;
               this.collidedGates.add(id);
-              window.parent.postMessage({ type: 'ESCAPED_GATE', gateId: id }, '*');
+              window.parent.postMessage(
+                { type: 'ESCAPED_GATE', gateId: id },
+                '*',
+              );
             });
           }
 
@@ -576,9 +589,96 @@ export class Main extends Phaser.Scene {
         if (!gatesData[id]) {
           val.destroy();
           this.localGates.delete(id);
+          this.collidedGates.delete(id);
         }
       });
     });
+  }
+
+  // Vẽ con mèo hoặc con chó pixel art đầy đủ cả thân và chân
+  private drawTrapPixelArt(
+    graphics: Phaser.GameObjects.Graphics,
+    type?: string,
+  ) {
+    const isCat = type === 'visibility_squeeze' || type === 'mall_copy';
+    const grid = isCat
+      ? [
+          // Tai mèo
+          [0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+          [0, 2, 1, 2, 0, 0, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 2, 2, 2, 2, 1, 1, 2, 0, 0, 0, 0, 0],
+          // Đầu mèo
+          [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 4, 1, 1, 1, 1, 1, 4, 1, 2, 0, 0, 0, 0, 0], // Mắt trắng
+          [2, 1, 1, 1, 1, 3, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0], // Mũi hồng
+          [2, 1, 1, 1, 3, 3, 3, 1, 1, 1, 2, 0, 0, 0, 0, 0], // Râu
+          [0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          // Thân mèo (nằm ngang kéo dài sang phải) + Đuôi hướng lên
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 2],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 2, 1],
+          [0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 2],
+          // Chân mèo (front & back legs)
+          [0, 0, 0, 2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 2, 2, 0],
+          [0, 0, 0, 2, 1, 2, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0],
+          [0, 0, 0, 2, 4, 2, 0, 2, 4, 2, 2, 4, 2, 0, 0, 0], // Bàn chân trắng
+        ]
+      : [
+          // Tai cụp
+          [0, 2, 2, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0],
+          [2, 1, 1, 2, 0, 0, 0, 2, 1, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 1, 1, 2, 2, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0],
+          // Đầu chó
+          [0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 2, 1, 3, 1, 1, 1, 3, 1, 2, 0, 0, 0, 0, 0, 0], // Mắt
+          [0, 2, 1, 1, 1, 3, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0], // Mũi
+          [0, 2, 1, 1, 3, 4, 3, 1, 1, 2, 0, 0, 0, 0, 0, 0], // Lưỡi thè ra
+          [0, 0, 2, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0],
+          // Thân chó kéo dài sang phải + Đuôi vểnh
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 2, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2],
+          [0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+          // Chân chó
+          [0, 0, 0, 2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 2, 0, 0],
+          [0, 0, 0, 2, 1, 2, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0],
+          [0, 0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 0, 0, 0],
+        ];
+
+    const colors: Record<number, number> = isCat
+      ? {
+          1: 0xffb74d, // Cam (Mèo)
+          2: 0x2c1a0e, // Viền nâu đậm
+          3: 0xff8a80, // Chi tiết hồng (mũi/tai)
+          4: 0xffffff, // Trắng (mắt/bàn chân)
+        }
+      : {
+          1: 0xa1887f, // Nâu (Chó)
+          2: 0x2c1a0e, // Viền nâu đậm
+          3: 0x1a1a1a, // Đen (mắt/mũi)
+          4: 0xe57373, // Lưỡi hồng thè ra
+        };
+
+    const pixelSize = 2; // pixelSize = 2 để cân đối tỉ lệ kích thước (16x14 grid -> 32x28 pixels)
+    const cols = grid[0].length;
+    const rows = grid.length;
+    const offsetX = -(cols * pixelSize) / 2;
+    const offsetY = -(rows * pixelSize) / 2;
+
+    graphics.clear();
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const val = grid[r][c];
+        if (val > 0) {
+          const color = colors[val] || 0;
+          graphics.fillStyle(color, 1);
+          graphics.fillRect(
+            offsetX + c * pixelSize,
+            offsetY + r * pixelSize,
+            pixelSize,
+            pixelSize,
+          );
+        }
+      }
+    }
   }
 
   private updateTrapVisuals() {
@@ -599,12 +699,7 @@ export class Main extends Phaser.Scene {
       warning?.setVisible(!isActive);
       active?.setVisible(isActive);
       if (label) {
-        label.setText(
-          isActive
-            ? container.getData('activeLabel') || 'Rủi ro'
-            : container.getData('warningLabel') || 'Rủi ro đang tới',
-        );
-        label.setAlpha(isActive ? 1 : 0.72);
+        label.setVisible(false); // Ẩn hoàn toàn bảng tên
       }
     });
   }
@@ -612,7 +707,9 @@ export class Main extends Phaser.Scene {
   private updateGateVisuals() {
     const now = Date.now();
     this.localGates.forEach((container) => {
-      const label = container.getData('gateLabel') as Phaser.GameObjects.Text | undefined;
+      const label = container.getData('gateLabel') as
+        | Phaser.GameObjects.Text
+        | undefined;
       const activeAt = container.getData('activeAt') || 0;
       const isActive = now >= activeAt;
       if (label) {

@@ -177,8 +177,7 @@ export const PHASE_ECONOMY_MIX = {
     ],
   },
   phase_2: {
-    mission:
-      'Tìm Khách Ruột đang ẩn trên bản đồ trong 60 giây.',
+    mission: 'Tìm Khách Ruột đang ẩn trên bản đồ trong 60 giây.',
     learningMeaning:
       'Khi nền tảng nắm quyền, shop nhỏ không làm sai vẫn mất tiền vì luật chơi bị áp đặt. Khách ruột là tài sản sống còn.',
     recap:
@@ -205,15 +204,12 @@ export const PHASE_ECONOMY_MIX = {
     ],
   },
   phase_3: {
-    mission:
-      'Chạy tới Cổng Thoát để rời khỏi sự phụ thuộc nền tảng.',
+    mission: 'Chạy tới Cổng Thoát để rời khỏi sự phụ thuộc nền tảng.',
     learningMeaning:
       'Đối đầu đốt tiền với độc quyền rất dễ cạn vốn. Cổng thoát đại diện cho việc xây kênh riêng, khách hàng riêng, và năng lực độc lập ngoài nền tảng.',
     recap:
       'Bạn vừa thấy cạnh tranh trong độc quyền: tiếp tục phụ thuộc nền tảng không phải chiến lược bền vững. Cổng thoát là xây kênh riêng, khách riêng và năng lực độc lập.',
-    progressGoals: [
-      { type: 'escaped_gate', target: 1, label: 'Cong thoat' },
-    ],
+    progressGoals: [{ type: 'escaped_gate', target: 1, label: 'Cong thoat' }],
     maxOpportunities: 4,
     hazardCount: 6,
     hazardSpeed: 2.6,

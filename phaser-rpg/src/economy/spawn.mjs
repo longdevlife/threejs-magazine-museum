@@ -5,6 +5,8 @@ export const SPAWN_ZONES = {
   platform_gate: { x: 976, y: 160, width: 200, height: 230 },
   mall_shadow: { x: 96, y: 840, width: 620, height: 150 },
   niche_corner: { x: 840, y: 840, width: 230, height: 130 },
+  // Vùng hẹp chắc chắn đi được — dành cho NPC ẩn
+  behind_shops_left: { x: 96, y: 440, width: 400, height: 60 },
 };
 
 // Điểm chắc chắn đi được (tâm đại lộ) — fallback khi mọi lần thử trúng tường.

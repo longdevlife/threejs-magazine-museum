@@ -39,6 +39,18 @@
     },
     "marketEvents": {
       ".write": true
+    },
+    "npcs": {
+      ".write": true,
+      "$npcId": {
+        ".write": true
+      }
+    },
+    "gates": {
+      ".write": true,
+      "$gateId": {
+        ".write": true
+      }
     }
   }
 }

@@ -125,6 +125,10 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
       phaseStartedAt: Date.now(),
       bookReward: config.bookReward,
       trapPenalty: config.trapPenalty,
+      mission: config.mission,
+      learningMeaning: config.learningMeaning,
+      recap: config.recap,
+      progressGoals: config.progressGoals,
     };
 
     await update(ref(db), updates);

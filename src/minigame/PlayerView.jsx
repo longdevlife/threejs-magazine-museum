@@ -1,30 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ref, set, update, onValue, get } from "firebase/database";
 import { db } from "./firebaseConfig";
-import { gameQuestions } from "./gameQuestions";
+import { situations, PHASE_CONFIGS } from "./situations";
 import RpgGamePlay from "./RpgGamePlay";
 
 const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnected, onResetRole }) => {
   const [tempName, setTempName] = useState(playerName);
   const [isJoined, setIsJoined] = useState(false);
-  const [selectedChoice, setSelectedChoice] = useState(null);
-  const [hasAnswered, setHasAnswered] = useState(false);
   const [playerInfo, setPlayerInfo] = useState({
-    score: 0,
-    capital: 20000000,
-    streak: 0,
-    isBankrupt: false
+    score: 0, capital: 20000000, streak: 0, isBankrupt: false,
   });
   const [players, setPlayers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(20);
 
-  // Dùng ref để tránh tính điểm lặp lại cho một câu hỏi
-  const calculatedQuestionRef = useRef(-1);
+  // Situation vote state
+  const [hasVoted, setHasVoted] = useState(false);
+  const [selectedVote, setSelectedVote] = useState(null);
 
-  // Lắng nghe danh sách tất cả người chơi (để đếm tổng số)
+  // Lắng nghe players
   useEffect(() => {
-    const playersRef = ref(db, "players");
-    const unsubscribe = onValue(playersRef, (snapshot) => {
+    const unsubscribe = onValue(ref(db, "players"), (snapshot) => {
       const data = snapshot.val() || {};
       setPlayers(data);
       if (data[playerId]) {
@@ -37,155 +31,47 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     return () => unsubscribe();
   }, [playerId]);
 
-  // Đồng bộ đếm ngược thời gian từ câu hỏi
+  // Reset vote khi chuyển situation
   useEffect(() => {
-    let timer;
-    if (gameState.status === "playing") {
-      const elapsed = Math.floor((Date.now() - gameState.questionStartedAt) / 1000);
-      const remaining = Math.max(0, gameState.timeLimit - elapsed);
-      setTimeLeft(remaining);
-
-      if (remaining > 0) {
-        timer = setInterval(() => {
-          setTimeLeft((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      }
+    if (gameState.status === "situation_1" || gameState.status === "situation_2") {
+      setHasVoted(false);
+      setSelectedVote(null);
+      // Check nếu đã vote trước đó (reload page)
+      const sitNum = gameState.status === "situation_1" ? 1 : 2;
+      get(ref(db, `votes/situation_${sitNum}/${playerId}`)).then((snap) => {
+        if (snap.val()) {
+          setHasVoted(true);
+          setSelectedVote(snap.val().choice);
+        }
+      });
     }
-    return () => clearInterval(timer);
-  }, [gameState.status, gameState.questionStartedAt]);
+  }, [gameState.status]);
 
-  // Reset lựa chọn khi chuyển sang câu hỏi mới
-  useEffect(() => {
-    if (gameState.status === "playing") {
-      setSelectedChoice(null);
-      setHasAnswered(false);
-    }
-  }, [gameState.status, gameState.currentQuestion]);
-
-  // Xử lý tự động tính điểm ở phía client khi Host công bố kết quả (show_result)
-  useEffect(() => {
-    if (gameState.status === "show_result" && isJoined) {
-      const qIndex = gameState.currentQuestion;
-      // Chỉ tính điểm một lần duy nhất cho mỗi câu hỏi
-      if (calculatedQuestionRef.current !== qIndex) {
-        calculatedQuestionRef.current = qIndex;
-        calculateScoreForQuestion(qIndex);
-      }
-    }
-  }, [gameState.status, gameState.currentQuestion, isJoined]);
-
-  // Đăng ký tham gia game
+  // Đăng ký tham gia
   const handleJoinGame = async (e) => {
     e.preventDefault();
     if (!tempName.trim()) return;
-
     const cleanName = tempName.trim().substring(0, 15);
     setPlayerName(cleanName);
     localStorage.setItem("minigame_player_name", cleanName);
-
-    // Lưu người chơi mới lên Firebase
     await set(ref(db, `players/${playerId}`), {
-      name: cleanName,
-      score: 0,
-      capital: 20000000,
-      streak: 0,
-      isBankrupt: false,
-      joinedAt: Date.now()
+      name: cleanName, score: 0, capital: 20000000, streak: 0, isBankrupt: false, joinedAt: Date.now(),
     });
-
     setIsJoined(true);
   };
 
-  // Người chơi chọn một đáp án
-  const handleSelectOption = async (choiceKey) => {
-    if (hasAnswered || gameState.status !== "playing") return;
-
-    setSelectedChoice(choiceKey);
-    setHasAnswered(true);
-
-    // Gửi câu trả lời lên Firebase kèm timestamp để tính bonus tốc độ
-    await set(ref(db, `answers/question_${gameState.currentQuestion}/${playerId}`), {
-      choice: choiceKey,
-      answeredAt: Date.now()
+  // Vote cho tình huống
+  const handleVote = async (choice) => {
+    if (hasVoted) return;
+    setSelectedVote(choice);
+    setHasVoted(true);
+    const sitNum = gameState.status === "situation_1" ? 1 : 2;
+    await set(ref(db, `votes/situation_${sitNum}/${playerId}`), {
+      choice, votedAt: Date.now(),
     });
   };
 
-  // Tính điểm cho câu hỏi
-  const calculateScoreForQuestion = async (qIndex) => {
-    const currentQ = gameQuestions[qIndex];
-    if (!currentQ) return;
-
-    // Lấy câu trả lời của người chơi từ Firebase
-    const answerSnap = await get(ref(db, `answers/question_${qIndex}/${playerId}`));
-    const answerData = answerSnap.val();
-
-    let pointsGained = 0;
-    let capitalChange = 0;
-    let newStreak = playerInfo.streak;
-
-    if (answerData) {
-      const playerChoice = answerData.choice;
-      const isCorrect = playerChoice === currentQ.correctAnswer;
-      const isTrap = currentQ.trapAnswers.includes(playerChoice);
-
-      if (isCorrect) {
-        pointsGained = 100;
-        capitalChange = 2000000;
-        newStreak += 1;
-
-        // Tính bonus tốc độ
-        const responseTime = (answerData.answeredAt - gameState.questionStartedAt) / 1000;
-        if (responseTime <= 5) {
-          pointsGained += 50; // Trả lời siêu nhanh trong 5s đầu
-        } else if (responseTime <= 10) {
-          pointsGained += 25; // Trả lời nhanh trong 5-10s
-        }
-
-        // Streak bonus
-        if (newStreak >= 3) {
-          pointsGained += 75;
-        }
-      } else {
-        newStreak = 0;
-        if (isTrap) {
-          pointsGained = -50;
-          capitalChange = -3000000; // Phạt nặng nếu dính bẫy
-        } else {
-          pointsGained = -25;
-          capitalChange = -1000000; // Phạt nhẹ hơn nếu sai bình thường
-        }
-      }
-    } else {
-      // Không trả lời (hết giờ)
-      newStreak = 0;
-      pointsGained = 0;
-      capitalChange = 0;
-    }
-
-    // Tính toán các giá trị mới
-    const newScore = Math.max(0, playerInfo.score + pointsGained);
-    const newCapital = Math.max(0, playerInfo.capital + capitalChange);
-    const newIsBankrupt = newCapital <= 0;
-
-    // Cập nhật thông tin lên Firebase
-    await update(ref(db, `players/${playerId}`), {
-      score: newScore,
-      capital: newCapital,
-      streak: newStreak,
-      isBankrupt: newIsBankrupt
-    });
-  };
-
-  const totalPlayersCount = Object.keys(players).length;
-  const currentQ = gameQuestions[gameState.currentQuestion];
-
-  // Xếp hạng hiện tại của người chơi
+  // Xếp hạng
   const getPlayerRank = () => {
     const sorted = Object.entries(players)
       .map(([id, info]) => ({ id, ...info }))
@@ -194,43 +80,30 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     return rank !== -1 ? rank + 1 : "-";
   };
 
-  // 1. CHƯA ĐĂNG KÝ TÊN -> HIỂN THỊ FORM ĐĂNG KÝ
+  const totalPlayersCount = Object.keys(players).length;
+  const isRpgPhase = ["phase_1", "phase_2", "phase_3"].includes(gameState.status);
+  const isSituation = gameState.status === "situation_1" || gameState.status === "situation_2";
+  const currentConfig = PHASE_CONFIGS[gameState.status];
+
+  // ===== 1. CHƯA ĐĂNG KÝ =====
   if (!isJoined) {
     return (
       <div className="minigame-panel" style={{ maxWidth: "450px" }}>
         <h2 className="minigame-title" style={{ fontSize: "2rem" }}>THAM GIA CHƠI</h2>
         <p className="minigame-subtitle" style={{ fontSize: "1.1rem" }}>Đăng ký mở shop quà tặng và bắt đầu cuộc sinh tồn</p>
-        
         <form onSubmit={handleJoinGame} className="join-form">
           <div className="input-group">
             <label className="input-label">Nhập tên / Biệt danh:</label>
-            <input 
-              type="text" 
-              className="game-input"
-              value={tempName}
-              onChange={(e) => setTempName(e.target.value)}
-              placeholder="Ví dụ: Anh Tuấn FPT"
-              maxLength={15}
-              required
-            />
+            <input type="text" className="game-input" value={tempName} onChange={(e) => setTempName(e.target.value)} placeholder="Ví dụ: Anh Tuấn FPT" maxLength={15} required />
           </div>
-          
-          <button type="submit" className="btn-cyber btn-cyber-blue" style={{ marginTop: "10px" }}>
-            Tham gia ngay
-          </button>
+          <button type="submit" className="btn-cyber btn-cyber-blue" style={{ marginTop: "10px" }}>Tham gia ngay</button>
         </form>
-
-        <button 
-          onClick={onResetRole}
-          style={{ background: "none", border: "none", color: "#8b8680", marginTop: "20px", textDecoration: "underline", cursor: "pointer", fontSize: "0.85rem" }}
-        >
-          Quay lại chọn vai trò
-        </button>
+        <button onClick={onResetRole} style={{ background: "none", border: "none", color: "#8b8680", marginTop: "20px", textDecoration: "underline", cursor: "pointer", fontSize: "0.85rem" }}>Quay lại chọn vai trò</button>
       </div>
     );
   }
 
-  // 2. TRẠNG THÁI: PHÒNG CHỜ (WAITING)
+  // ===== 2. WAITING =====
   if (gameState.status === "waiting") {
     return (
       <div className="minigame-panel" style={{ maxWidth: "450px", textAlign: "center" }}>
@@ -240,138 +113,99 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
           Xin chào, {playerName}!
         </p>
         <p style={{ color: "#8b8680", fontSize: "0.95rem", lineHeight: "1.6" }}>
-          Bạn đã đăng ký shop thành công. Vui lòng nhìn lên màn hình máy chiếu của cả lớp. MC sẽ sớm bắt đầu trò chơi!
+          Bạn đã đăng ký shop thành công. Nhìn lên màn hình máy chiếu — MC sẽ sớm bắt đầu!
         </p>
-
-        <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: "10px", padding: "15px", margin: "30px 0", border: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ fontSize: "0.9rem", color: "var(--neon-blue)", textTransform: "uppercase", fontWeight: "bold" }}>
-            Tổng số người chơi:
-          </div>
-          <div style={{ fontSize: "2rem", fontWeight: "bold", margin: "5px 0" }}>
-            {totalPlayersCount}
-          </div>
+        <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: "10px", padding: "15px", margin: "30px 0" }}>
+          <div style={{ fontSize: "0.9rem", color: "var(--neon-blue)", textTransform: "uppercase", fontWeight: "bold" }}>Tổng số người chơi:</div>
+          <div style={{ fontSize: "2rem", fontWeight: "bold", margin: "5px 0" }}>{totalPlayersCount}</div>
         </div>
-
-        <div className="loading-dots">
-          <span></span><span></span><span></span>
-        </div>
+        <div className="loading-dots"><span></span><span></span><span></span></div>
       </div>
     );
   }
 
-  // 3. TRẠNG THÁI: ĐANG CHƠI GAME RPG (PLAYING)
-  if (gameState.status === "playing") {
+  // ===== 3. RPG PHASE (1/2/3) — Chơi game RPG =====
+  if (isRpgPhase) {
     return (
-      <RpgGamePlay 
+      <RpgGamePlay
         playerId={playerId}
         playerName={playerName}
         playerInfo={playerInfo}
         dbConnected={dbConnected}
+        gameState={gameState}
       />
     );
   }
 
-  // 4. TRẠNG THÁI: HIỂN THỊ KẾT QUẢ CỦA CÂU HỎI (SHOW_RESULT)
-  if (gameState.status === "show_result" && currentQ) {
-    const isCorrect = selectedChoice === currentQ.correctAnswer;
-    const isTrap = currentQ.trapAnswers.includes(selectedChoice);
-    
-    let resultTitle = "BẠN KHÔNG TRẢ LỜI ⏱️";
-    let resultClass = "wrong";
-    let pointsFeedback = "0 điểm";
-    let capitalFeedback = "";
-
-    if (selectedChoice) {
-      if (isCorrect) {
-        resultTitle = "ĐÁP ÁN ĐÚNG! 🎉";
-        resultClass = "correct";
-        
-        // Tính nhẩm điểm hiển thị phản hồi nhanh
-        let pts = 100;
-        if (playerInfo.streak >= 2) pts += 75; // Bao gồm cả câu này
-        pointsFeedback = `+${pts} điểm`;
-        capitalFeedback = "+2,000,000đ";
-      } else {
-        resultTitle = isTrap ? "DÍNH BẪY ĐỘC QUYỀN! 💀" : "ĐÁP ÁN SAI! ❌";
-        resultClass = "wrong";
-        pointsFeedback = isTrap ? "-50 điểm" : "-25 điểm";
-        capitalFeedback = isTrap ? "-3,000,000đ" : "-1,000,000đ";
-      }
-    }
+  // ===== 4. SITUATION (1/2) — RPG pause + popup biểu quyết A/B =====
+  if (isSituation) {
+    const sitIdx = gameState.status === "situation_1" ? 0 : 1;
+    const sit = situations[sitIdx];
 
     return (
       <div className="minigame-panel" style={{ maxWidth: "550px" }}>
-        <h2 className={`result-status ${resultClass}`}>{resultTitle}</h2>
+        <div style={{ textAlign: "center", marginBottom: "15px" }}>
+          <span style={{ fontSize: "2.5rem" }}>⚡</span>
+          <h2 style={{ color: "var(--neon-red)", fontSize: "1.3rem", fontWeight: "bold", margin: "8px 0" }}>
+            TÌNH HUỐNG {sitIdx + 1}
+          </h2>
+          <p style={{ color: "var(--neon-gold)", fontSize: "0.9rem" }}>{sit.title}</p>
+        </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", background: "rgba(0,0,0,0.3)", padding: "15px 20px", borderRadius: "10px", marginBottom: "25px", border: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "0.8rem", color: "#8b8680", textTransform: "uppercase" }}>Tổng Điểm</div>
-            <div style={{ fontSize: "1.4rem", fontWeight: "bold", color: "var(--neon-blue)" }}>{playerInfo.score}đ</div>
-            <div style={{ fontSize: "0.8rem", color: isCorrect ? "var(--neon-green)" : "var(--neon-red)", marginTop: "2px" }}>{pointsFeedback}</div>
+        <div className="situation-box" style={{ fontSize: "1rem", lineHeight: "1.7" }}>
+          {sit.story}
+        </div>
+
+        {!hasVoted ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "25px" }}>
+            <button
+              className="option-button"
+              onClick={() => handleVote("A")}
+              style={{ padding: "16px 20px", fontSize: "1rem", textAlign: "left", cursor: "pointer", border: "2px solid var(--neon-blue)" }}
+            >
+              <span className="option-prefix" style={{ color: "var(--neon-blue)" }}>A.</span> {sit.optionA.label}
+            </button>
+            <button
+              className="option-button"
+              onClick={() => handleVote("B")}
+              style={{ padding: "16px 20px", fontSize: "1rem", textAlign: "left", cursor: "pointer", border: "2px solid var(--neon-green)" }}
+            >
+              <span className="option-prefix" style={{ color: "var(--neon-green)" }}>B.</span> {sit.optionB.label}
+            </button>
           </div>
-
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "0.8rem", color: "#8b8680", textTransform: "uppercase" }}>Vốn Hiện Tại</div>
-            <div style={{ fontSize: "1.4rem", fontWeight: "bold", color: playerInfo.isBankrupt ? "var(--neon-red)" : "var(--neon-green)" }}>
-              {playerInfo.isBankrupt ? "💀 PHÁ SẢN" : `${playerInfo.capital.toLocaleString()}đ`}
+        ) : (
+          <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(0,0,0,0.3)", borderRadius: "12px", marginTop: "25px" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "10px" }}>✅</div>
+            <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: selectedVote === "A" ? "var(--neon-blue)" : "var(--neon-green)" }}>
+              Bạn đã chọn: {selectedVote}
             </div>
-            {capitalFeedback && (
-              <div style={{ fontSize: "0.8rem", color: isCorrect ? "var(--neon-green)" : "var(--neon-red)", marginTop: "2px" }}>{capitalFeedback}</div>
-            )}
+            <p style={{ color: "#8b8680", fontSize: "0.9rem", marginTop: "10px" }}>
+              Nhìn lên máy chiếu để xem kết quả biểu quyết của cả lớp...
+            </p>
           </div>
+        )}
 
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "0.8rem", color: "#8b8680", textTransform: "uppercase" }}>Hạng của bạn</div>
-            <div style={{ fontSize: "1.4rem", fontWeight: "bold", color: "var(--neon-gold)" }}>#{getPlayerRank()}</div>
-            <div style={{ fontSize: "0.8rem", color: "#8b8680", marginTop: "2px" }}>/{totalPlayersCount} người</div>
-          </div>
-        </div>
-
-        {/* Nội dung đáp án đúng */}
-        <div style={{ marginBottom: "20px" }}>
-          <span style={{ fontWeight: "bold", color: "var(--neon-gold)" }}>Đáp án đúng: </span>
-          <strong style={{ color: "var(--neon-green)" }}>{currentQ.correctAnswer}</strong>
-          <p style={{ fontSize: "0.95rem", color: "#fff", marginTop: "5px", background: "rgba(255,255,255,0.02)", padding: "10px", borderRadius: "5px" }}>
-            {currentQ.options[currentQ.correctAnswer]}
-          </p>
-        </div>
-
-        <div className="explanation-section" style={{ padding: "15px", marginTop: "20px" }}>
-          <div className="explanation-title" style={{ fontSize: "1.1rem" }}>💡 Bài học rút ra:</div>
-          <p className="explanation-text" style={{ fontSize: "0.9rem", marginBottom: "15px" }}>{currentQ.explanation}</p>
-          
-          <div className="marx-section" style={{ paddingTop: "15px" }}>
-            <div className="marx-title" style={{ fontSize: "1rem" }}>☭ Lý luận Mác - Lênin:</div>
-            <p className="marx-text" style={{ fontSize: "0.95rem" }}>{currentQ.marxLenin}</p>
-          </div>
-        </div>
-
-        <div style={{ textAlign: "center", color: "#8b8680", fontSize: "0.85rem", marginTop: "25px" }}>
-          MC đang giảng bài và chuẩn bị chuyển câu tiếp theo...
+        {/* Mini HUD */}
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between", color: "#8b8680", fontSize: "0.85rem", padding: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "8px" }}>
+          <span>👤 {playerName}</span>
+          <span>💰 {playerInfo.capital?.toLocaleString()}đ</span>
+          <span>⭐ {playerInfo.score}đ</span>
+          <span>🏅 #{getPlayerRank()}</span>
         </div>
       </div>
     );
   }
 
-  // 5. TRẠNG THÁI: KẾT THÚC GAME (FINISHED)
+  // ===== 5. FINISHED =====
   if (gameState.status === "finished") {
     const finalRank = getPlayerRank();
     let badgeText = "💀 Doanh nghiệp phá sản";
     let badgeColor = "var(--neon-red)";
-    
-    if (finalRank === 1) {
-      badgeText = "👑 Vua Sinh Tồn Sàn Số";
-      badgeColor = "var(--neon-gold)";
-    } else if (finalRank <= 3) {
-      badgeText = "🏆 Top Nhà Sinh Tồn Xuất Sắc";
-      badgeColor = "var(--neon-blue)";
-    } else if (playerInfo.capital > 20000000) {
-      badgeText = "📈 Kinh doanh có lãi";
-      badgeColor = "var(--neon-green)";
-    } else if (!playerInfo.isBankrupt) {
-      badgeText = "💼 Sống sót thành công";
-      badgeColor = "#e1dbd6";
-    }
+
+    if (finalRank === 1) { badgeText = "👑 Vua Sinh Tồn Sàn Số"; badgeColor = "var(--neon-gold)"; }
+    else if (finalRank <= 3) { badgeText = "🏆 Top Nhà Sinh Tồn Xuất Sắc"; badgeColor = "var(--neon-blue)"; }
+    else if (playerInfo.capital > 20000000) { badgeText = "📈 Kinh doanh có lãi"; badgeColor = "var(--neon-green)"; }
+    else if (!playerInfo.isBankrupt) { badgeText = "💼 Sống sót thành công"; badgeColor = "#e1dbd6"; }
 
     return (
       <div className="minigame-panel" style={{ maxWidth: "450px", textAlign: "center" }}>
@@ -383,33 +217,26 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
           {badgeText}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "15px", background: "rgba(0,0,0,0.3)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", marginBottom: "30px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "15px", background: "rgba(0,0,0,0.3)", padding: "20px", borderRadius: "12px", marginBottom: "30px" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#8b8680" }}>Vị trí xếp hạng:</span>
             <strong style={{ color: "var(--neon-gold)", fontSize: "1.2rem" }}>#{finalRank} / {totalPlayersCount}</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ color: "#8b8680" }}>Tổng điểm tích lũy:</span>
+            <span style={{ color: "#8b8680" }}>Tổng điểm:</span>
             <strong style={{ color: "var(--neon-blue)", fontSize: "1.2rem" }}>{playerInfo.score} điểm</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#8b8680" }}>Vốn còn lại:</span>
             <strong style={{ color: playerInfo.isBankrupt ? "var(--neon-red)" : "var(--neon-green)", fontSize: "1.2rem" }}>
-              {playerInfo.capital.toLocaleString()}đ
+              {playerInfo.capital?.toLocaleString()}đ
             </strong>
           </div>
         </div>
 
-        <p style={{ color: "#8b8680", fontSize: "0.85rem", lineHeight: "1.5", margin: "20px 0" }}>
-          Cảm ơn bạn đã tham gia Mini Game thuyết trình! Hãy cùng MC lắng nghe các bài học lý luận Kinh tế chính trị kết luận.
+        <p style={{ color: "#8b8680", fontSize: "0.85rem", lineHeight: "1.5" }}>
+          Cảm ơn bạn đã tham gia! Hãy lắng nghe MC tổng kết bài học.
         </p>
-
-        <button 
-          onClick={onResetRole}
-          style={{ background: "none", border: "none", color: "#8b8680", textDecoration: "underline", cursor: "pointer", fontSize: "0.85rem" }}
-        >
-          Quay lại màn hình chính
-        </button>
       </div>
     );
   }

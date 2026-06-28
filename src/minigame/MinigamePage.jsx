@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ref, onValue, set, get } from "firebase/database";
 import { db } from "./firebaseConfig";
-import HostView from "./RpgHostView";
+import HostView from "./HostView";
 import PlayerView from "./PlayerView";
 import "./minigame.css";
 
@@ -26,10 +26,7 @@ export const MinigamePage = () => {
 
   const [dbConnected, setDbConnected] = useState(false);
   const [gameState, setGameState] = useState({
-    status: "waiting", // waiting | playing | show_result | finished
-    currentQuestion: 0,
-    questionStartedAt: 0,
-    timeLimit: 20
+    status: "waiting", // waiting | phase_1 | situation_1 | phase_2 | situation_2 | phase_3 | finished
   });
 
   // Kiểm tra kết nối Firebase Realtime Database
@@ -55,12 +52,7 @@ export const MinigamePage = () => {
         setGameState(data);
       } else {
         // Khởi tạo trạng thái mặc định nếu database trống
-        set(gameStateRef, {
-          status: "waiting",
-          currentQuestion: 0,
-          questionStartedAt: 0,
-          timeLimit: 20
-        });
+        set(gameStateRef, { status: "waiting" });
       }
     });
 
@@ -89,7 +81,7 @@ export const MinigamePage = () => {
             <div className="role-card role-player" onClick={() => handleSelectRole("player")}>
               <div className="role-icon">📱</div>
               <div className="role-name">Người Chơi</div>
-              <div className="role-desc">Dành cho sinh viên cả lớp. Quét mã QR trên máy chiếu, tham gia và tương tác trả lời câu hỏi trực tiếp trên điện thoại của bạn.</div>
+              <div className="role-desc">Dành cho sinh viên cả lớp. Quét mã QR, nhập vai chủ shop handmade, di chuyển nhặt sách và né bẫy trên điện thoại.</div>
             </div>
 
             <div className="role-card role-host" onClick={() => handleSelectRole("host")}>

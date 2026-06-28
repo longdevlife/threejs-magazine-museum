@@ -365,7 +365,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   const isRpgPhase = ["phase_1", "phase_2", "phase_3"].includes(gameState.status);
 
   return (
-    <div className="minigame-panel" style={{ maxWidth: "1200px", width: "95%" }}>
+    <div className="minigame-panel" style={{ maxWidth: "1450px", width: "95%" }}>
       {/* Header MC */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -472,7 +472,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", justifyContent: "center" }}>
             {/* RPG Spectator */}
-            <div style={{ flex: "2", minWidth: "350px", maxWidth: "750px" }}>
+            <div style={{ flex: "2", minWidth: "350px", maxWidth: "1000px", width: "100%" }}>
               <div style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", overflow: "hidden", background: "#000", boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
                 <iframe
                   ref={iframeRef}

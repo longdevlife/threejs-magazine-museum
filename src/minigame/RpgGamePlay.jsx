@@ -176,7 +176,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1000px", margin: "0 auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
 
       {/* Phase indicator + HUD - Vintage Academic styling */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#ede8e1", border: "1px solid rgba(0, 0, 0, 0.08)", borderRadius: "16px", padding: "12px 20px", marginBottom: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6)", color: "#2c1a0e" }}>

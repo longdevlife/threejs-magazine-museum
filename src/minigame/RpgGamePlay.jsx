@@ -4,6 +4,34 @@ import { db } from "./firebaseConfig";
 import { PHASE_CONFIGS } from "./situations";
 import { applyPlayerDelta } from "./gameStateUtils";
 import { getCharacterOption } from "./characterOptions";
+import {
+  IconPhone,
+  IconDesktop,
+  IconLeaf,
+  IconWarning,
+  IconFlame,
+  IconBook,
+  IconBolt,
+  IconSkull,
+  IconTrophy,
+  IconCrown,
+  IconTimer,
+  IconBulb,
+  IconUser,
+  IconCheck,
+  IconPin,
+  IconArrowRight,
+  IconRefresh
+} from "./icons";
+
+// Helper lấy Icon Phase tương ứng
+const getPhaseIcon = (status, className = "w-5 h-5") => {
+  if (status === "phase_1") return <IconLeaf className={`${className} text-emerald-500`} />;
+  if (status === "phase_2") return <IconWarning className={`${className} text-amber-500`} />;
+  if (status === "phase_3") return <IconFlame className={`${className} text-red-500`} />;
+  return null;
+};
+
 
 const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState }) => {
   const iframeRef = useRef(null);
@@ -53,33 +81,50 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
       if (didClaim) {
         await remove(ref(db, `books/${bookId}`));
       }
-      return didClaim;
+      return didClaim ? claimedBook : null;
     };
 
     const handleMessage = async (e) => {
       if (!e.data) return;
 
-      // A. Nhặt sách tri thức → Bonus theo phase config
+      // A. Nhặt cơ hội kinh doanh → Bonus theo object type
       if (e.data.type === "NHAT_SACH") {
-        const didClaim = await claimBook(e.data.bookId);
-        if (!didClaim) return;
+        const claimedBook = await claimBook(e.data.bookId);
+        if (!claimedBook) return;
 
-        const { score: bonusScore, capital: bonusCapital } = phaseConfig.bookReward;
+        const opportunity = e.data.opportunity || {};
+        const bonusScore = Number.isFinite(claimedBook.score)
+          ? claimedBook.score
+          : phaseConfig.bookReward.score;
+        const bonusCapital = Number.isFinite(claimedBook.capital)
+          ? claimedBook.capital
+          : phaseConfig.bookReward.capital;
+
         await applyScoreCapitalDelta({ score: bonusScore, capital: bonusCapital });
-
-        addFloatingText(`+${bonusScore}đ 📖`, "#4caf50");
+        addFloatingText(claimedBook.message || `+${bonusScore}đ Cơ hội`, claimedBook.color || "#2e7d32");
       }
 
-      // B. Va chạm bẫy → Phạt theo phase config
+      // B. Va chạm rủi ro nền tảng → Phạt theo hazard type
       if (e.data.type === "DINH_BAY") {
-        setIsFrozen(true);
-        setFreezeTime(3);
-        iframeRef.current?.contentWindow?.postMessage({ type: "FREEZE" }, "*");
+        const hazard = e.data.hazard || {};
+        const shouldFreeze = hazard.effect === "freeze" || !hazard.effect;
+        const freezeSeconds = Math.ceil((hazard.durationMs || 3000) / 1000);
 
-        const { score: penScore, capital: penCapital } = phaseConfig.trapPenalty;
+        if (shouldFreeze) {
+          setIsFrozen(true);
+          setFreezeTime(freezeSeconds);
+          iframeRef.current?.contentWindow?.postMessage({ type: "FREEZE" }, "*");
+        }
+
+        const penScore = Number.isFinite(hazard.score)
+          ? hazard.score
+          : phaseConfig.trapPenalty.score;
+        const penCapital = Number.isFinite(hazard.capital)
+          ? hazard.capital
+          : phaseConfig.trapPenalty.capital;
+
         await applyScoreCapitalDelta({ score: penScore, capital: penCapital });
-
-        addFloatingText(`${penScore}đ ⚡`, "#ff3344");
+        addFloatingText(hazard.message || `${penScore}đ Rủi ro`, hazard.color || "#c5272d");
       }
     };
 
@@ -114,9 +159,10 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
       const diff = lastCapitalRef.current - playerInfo.capital;
       // Chỉ hiện nếu đúng mức phí sàn (±20% tolerance)
       if (Math.abs(diff - phaseConfig.platformFeeAmount) < phaseConfig.platformFeeAmount * 0.3) {
-        addFloatingText(`-${(phaseConfig.platformFeeAmount / 1000000).toFixed(0)}tr 💀 Phí sàn`, "#ff6b35");
+        addFloatingText(`-${(phaseConfig.platformFeeAmount / 1000000).toFixed(0)}tr Phí sàn`, "#ff6b35");
       }
     }
+
     lastCapitalRef.current = playerInfo.capital;
   }, [playerInfo.capital]);
 
@@ -130,67 +176,76 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1000px", margin: "0 auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
 
-      {/* Phase indicator + HUD */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#fcf3e3", border: "3px solid #a16b47", borderRadius: "12px", padding: "8px 15px", marginBottom: "10px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", color: "#333" }}>
+      {/* Phase indicator + HUD - Vintage Academic styling */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#ede8e1", border: "1px solid rgba(0, 0, 0, 0.08)", borderRadius: "16px", padding: "12px 20px", marginBottom: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6)", color: "#2c1a0e" }}>
         {/* Phase badge */}
-        <div style={{ textAlign: "center", minWidth: "80px" }}>
-          <div style={{ fontSize: "8px", color: "#795548", fontWeight: "bold", textTransform: "uppercase" }}>Phase</div>
-          <div style={{ fontSize: "13px", fontWeight: "bold", color: "#a16b47" }}>
-            {phaseConfig.emoji} {phaseConfig.name.split(" ").slice(0, 2).join(" ")}
+        <div style={{ textAlign: "center", minWidth: "90px" }}>
+          <div style={{ fontSize: "7px", color: "var(--neon-gold)", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px" }}>Giai đoạn</div>
+          <div style={{ fontSize: "0.85rem", fontWeight: "800", color: "var(--neon-red)", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", marginTop: "2px" }}>
+            {getPhaseIcon(gameState.status, "w-4 h-4")} {phaseConfig.name.split(" ").slice(0, 2).join(" ")}
           </div>
         </div>
-        <div style={{ width: "2px", background: "#a16b47", margin: "0 8px", height: "30px" }} />
+        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
 
         {/* Vốn */}
         <div style={{ textAlign: "center", flex: 1 }}>
-          <div style={{ fontSize: "8px", color: "#795548", fontWeight: "bold" }}>VỐN</div>
-          <div style={{ fontSize: "14px", fontWeight: "bold", color: playerInfo.isBankrupt ? "#d32f2f" : "#388e3c" }}>
-            {playerInfo.isBankrupt ? "💀 PHÁ SẢN" : `${(playerInfo.capital || 0).toLocaleString()}đ`}
+          <div style={{ fontSize: "7px", color: "#8b8680", fontWeight: "800", letterSpacing: "1px" }}>VỐN</div>
+          <div style={{ fontSize: "0.95rem", fontWeight: "800", color: playerInfo.isBankrupt ? "var(--neon-red)" : "var(--neon-green)", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", marginTop: "2px", fontFamily: "var(--font-mono)" }}>
+            {playerInfo.isBankrupt ? (
+              <>
+                <IconSkull className="w-4 h-4 text-red-500 animate-pulse" /> PHÁ SẢN
+              </>
+            ) : (
+              <span className="pix-num">{`${(playerInfo.capital || 0).toLocaleString()}đ`}</span>
+            )}
           </div>
         </div>
-        <div style={{ width: "2px", background: "#a16b47", margin: "0 8px", height: "30px" }} />
+        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
 
         {/* Điểm */}
         <div style={{ textAlign: "center", flex: 1 }}>
-          <div style={{ fontSize: "8px", color: "#795548", fontWeight: "bold" }}>ĐIỂM</div>
-          <div style={{ fontSize: "14px", fontWeight: "bold", color: "#1976d2" }}>{playerInfo.score || 0}đ</div>
+          <div style={{ fontSize: "7px", color: "#8b8680", fontWeight: "800", letterSpacing: "1px" }}>ĐIỂM TÍCH LŨY</div>
+          <div style={{ fontSize: "0.95rem", fontWeight: "800", color: "var(--neon-blue)", marginTop: "2px", fontFamily: "var(--font-mono)" }}>
+            <span className="pix-num">{playerInfo.score || 0}đ</span>
+          </div>
         </div>
-        <div style={{ width: "2px", background: "#a16b47", margin: "0 8px", height: "30px" }} />
+        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
 
         {/* Nhân vật */}
         <div style={{ textAlign: "center", flex: 1 }}>
-          <div style={{ fontSize: "8px", color: "#795548", fontWeight: "bold" }}>NHÂN VẬT</div>
-          <div style={{ fontSize: "14px", fontWeight: "bold", color: selectedCharacter.color }}>
-            {selectedCharacter.icon} {selectedCharacter.label}
+          <div style={{ fontSize: "7px", color: "#8b8680", fontWeight: "800", letterSpacing: "1px" }}>CHỦ SHOP</div>
+          <div style={{ fontSize: "0.85rem", fontWeight: "800", color: selectedCharacter.color, marginTop: "2px" }}>
+            {selectedCharacter.label}
           </div>
         </div>
       </div>
 
       {/* Thông báo phí sàn */}
       {phaseConfig.platformFeeInterval > 0 && (
-        <div style={{ width: "100%", background: "rgba(255,51,68,0.15)", border: "1px solid rgba(255,51,68,0.3)", borderRadius: "8px", padding: "6px 12px", marginBottom: "8px", fontSize: "0.75rem", color: "#ff6b35", textAlign: "center" }}>
-          💀 Phí sàn: -{(phaseConfig.platformFeeAmount / 1000000).toFixed(0)} triệu mỗi {phaseConfig.platformFeeInterval / 1000}s
+        <div style={{ width: "100%", background: "rgba(197,39,45,0.08)", border: "1px solid rgba(197,39,45,0.15)", borderRadius: "10px", padding: "8px 12px", marginBottom: "10px", fontSize: "0.75rem", color: "#ff6b35", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+          <IconSkull className="w-4 h-4 text-red-500 animate-pulse" />
+          <span>Hệ quả Độc quyền (Phí sàn): <b>-{(phaseConfig.platformFeeAmount / 1000000).toFixed(0)} triệu</b> vốn mỗi <b>{phaseConfig.platformFeeInterval / 1000}s</b></span>
         </div>
       )}
 
       {/* Game console */}
-      <div className="game-console-wrapper" style={{ width: "100%", background: "#a16b47", border: "5px solid #5c3d28", borderRadius: "24px", padding: "12px", boxShadow: "0 20px 40px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.6)" }}>
+      <div className="game-console-wrapper" style={{ width: "100%", background: "var(--panel-bg)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "16px", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 0 20px 45px rgba(0,0,0,0.6)" }}>
 
-        {/* LED */}
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 10px 8px" }}>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: dbConnected ? "#4caf50" : "#f44336", boxShadow: dbConnected ? "0 0 8px #4caf50" : "0 0 8px #f44336" }} />
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: isFrozen ? "#00bcd4" : "rgba(255,255,255,0.2)" }} />
+        {/* LED & Phase name */}
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 10px 10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: dbConnected ? "var(--neon-green)" : "var(--neon-red)", boxShadow: dbConnected ? "0 0 10px var(--neon-green)" : "0 0 10px var(--neon-red)" }} />
+            <span style={{ fontSize: "0.7rem", color: "#8b8680", fontWeight: "bold" }}>MÁY CHỦ REALTIME</span>
           </div>
-          <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.4)", letterSpacing: "1.5px", fontWeight: "bold" }}>
-            {phaseConfig.emoji} {phaseConfig.name.toUpperCase()}
+          <span style={{ fontSize: "9px", color: "var(--neon-gold)", letterSpacing: "1.5px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px" }}>
+            {getPhaseIcon(gameState.status, "w-3.5 h-3.5")} {phaseConfig.name.toUpperCase()}
           </span>
         </div>
 
         {/* Iframe Phaser RPG */}
-        <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", border: "4px solid #333", borderRadius: "8px", overflow: "hidden", background: "#000" }}>
+        <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", overflow: "hidden", background: "#000", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
           <iframe
             ref={iframeRef}
             src={`/rpg/index.html?role=player&id=${playerId}&name=${encodeURIComponent(playerName)}&character=${encodeURIComponent(selectedCharacter.id)}&color=${encodeURIComponent(selectedCharacter.color)}`}
@@ -200,10 +255,10 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
 
           {/* Overlay đóng băng */}
           {isFrozen && (
-            <div style={{ position: "absolute", inset: 0, background: "rgba(0, 188, 212, 0.2)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", pointerEvents: "all" }}>
-              <span style={{ fontSize: "3.5rem" }}>🧊</span>
-              <h3 style={{ color: "#fff", fontWeight: "bold", fontSize: "1.4rem", textShadow: "0 2px 4px rgba(0,0,0,0.5)", marginTop: "10px" }}>BẪY SÉT!</h3>
-              <p style={{ color: "#fff", fontSize: "0.9rem" }}>Đóng băng: {freezeTime}s</p>
+            <div style={{ position: "absolute", inset: 0, background: "rgba(21, 101, 192, 0.25)", backdropFilter: "blur(6px)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", pointerEvents: "all" }}>
+              <IconWarning className="w-12 h-12 text-cyan-400 animate-pulse" />
+              <h3 style={{ color: "#fff", fontWeight: "bold", fontSize: "1.4rem", textShadow: "0 2px 8px rgba(0,0,0,0.6)", marginTop: "12px", letterSpacing: "1px" }}>BỊ PHẠT ĐÓNG BĂNG!</h3>
+              <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.95rem" }}>Thời gian còn lại: {freezeTime} giây</p>
             </div>
           )}
 
@@ -213,8 +268,8 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
               key={ft.id}
               style={{
                 position: "absolute", top: "40%", left: "50%", transform: "translateX(-50%)",
-                fontSize: "1.6rem", fontWeight: "bold", color: ft.color,
-                textShadow: "0 2px 8px rgba(0,0,0,0.7)", animation: "floatUp 1.5s ease-out forwards",
+                fontSize: "1.4rem", fontWeight: "800", color: ft.color,
+                textShadow: "0 2px 8px rgba(0,0,0,0.8)", animation: "floatUp 1.5s ease-out forwards",
                 pointerEvents: "none", zIndex: 10,
               }}
             >
@@ -224,8 +279,12 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         </div>
       </div>
 
-      <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem", marginTop: "8px", textAlign: "center" }}>
-        WASD / Mũi tên (PC) • D-pad (Mobile) • 📖 Nhặt sách = +{phaseConfig.bookReward.score}đ • ⚡ Né bẫy!
+      <div style={{ color: "#8b8680", fontSize: "0.75rem", marginTop: "10px", textAlign: "center", display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+        <span>Điều khiển: WASD / Mũi tên</span>
+        <span>•</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}><IconBook className="w-3.5 h-3.5 text-amber-500" /> Nhặt cơ hội</span>
+        <span>•</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}><IconBolt className="w-3.5 h-3.5 text-red-500" /> Né rủi ro nền tảng</span>
       </div>
 
       {/* D-pad */}
@@ -242,3 +301,4 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
 };
 
 export default RpgGamePlay;
+

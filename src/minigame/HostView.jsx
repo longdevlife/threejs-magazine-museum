@@ -228,13 +228,13 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
         const step = Math.min(CHASE_SPEED_CAP, speed);
         const nx = t.x + (dx / len) * step;
         const ny = t.y + (dy / len) * step;
-        // đâm tường thì trượt theo từng trục để men quanh nhà
-        if (!tryMove(t, nx, ny) && !tryMove(t, nx, t.y)) tryMove(t, t.x, ny);
-        return;
+        // đâm tường thì trượt theo trục; kẹt cả 3 hướng thì rơi xuống bounce-wander để không đứng im
+        if (tryMove(t, nx, ny) || tryMove(t, nx, t.y) || tryMove(t, t.x, ny)) return;
       }
 
-      // diagonal / patrol: bay theo vx/vy, chạm tường/biên thì đảo trục
+      // diagonal / patrol (và chase bị kẹt góc): bay theo vx/vy, chạm tường/biên thì đảo trục
       let { vx = speed, vy = 0 } = t;
+      if (vx === 0 && vy === 0) vx = speed; // chase kẹt → hích ngang cho thoát, khung sau homing đuổi tiếp
       if (!tryMove(t, t.x + vx, t.y + vy)) {
         if (tryMove(t, t.x - vx, t.y + vy)) vx = -vx;
         else if (tryMove(t, t.x + vx, t.y - vy)) vy = -vy;

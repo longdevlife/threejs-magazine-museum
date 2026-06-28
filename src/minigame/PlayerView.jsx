@@ -258,9 +258,9 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
         {/* Mini HUD */}
         <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between", color: "#8b8680", fontSize: "0.85rem", padding: "10px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", fontVariantNumeric: "tabular-nums" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><IconUser className="w-4 h-4 text-slate-400" /> {playerName}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><IconLeaf className="w-4 h-4 text-emerald-500" /> {playerInfo.capital?.toLocaleString()}đ</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><IconTrophy className="w-4 h-4 text-yellow-500" /> {playerInfo.score}đ</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><IconCrown className="w-4 h-4 text-amber-500" /> #{getPlayerRank()}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><IconLeaf className="w-4 h-4 text-emerald-500" /> <span className="pix-num">{playerInfo.capital?.toLocaleString()}đ</span></span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><IconTrophy className="w-4 h-4 text-yellow-500" /> <span className="pix-num">{playerInfo.score}đ</span></span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><IconCrown className="w-4 h-4 text-amber-500" /> <span className="pix-num">#{getPlayerRank()}</span></span>
         </div>
       </div>
     );
@@ -310,15 +310,15 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
         <div style={{ display: "flex", flexDirection: "column", gap: "15px", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.05)", padding: "20px", borderRadius: "16px", marginBottom: "30px", fontVariantNumeric: "tabular-nums", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)" }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#8b8680" }}>Vị trí xếp hạng:</span>
-            <strong style={{ color: "var(--neon-gold)", fontSize: "1.1rem" }}>#{finalRank} / {totalPlayersCount}</strong>
+            <strong className="pix-num" style={{ color: "var(--neon-gold)", fontSize: "1.1rem" }}>#{finalRank} / {totalPlayersCount}</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#8b8680" }}>Tổng điểm:</span>
-            <strong style={{ color: "var(--neon-blue)", fontSize: "1.1rem" }}>{playerInfo.score} điểm</strong>
+            <strong style={{ color: "var(--neon-blue)", fontSize: "1.1rem" }}><span className="pix-num">{playerInfo.score}</span> điểm</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#8b8680" }}>Vốn còn lại:</span>
-            <strong style={{ color: playerInfo.isBankrupt ? "var(--neon-red)" : "var(--neon-green)", fontSize: "1.1rem" }}>
+            <strong className="pix-num" style={{ color: playerInfo.isBankrupt ? "var(--neon-red)" : "var(--neon-green)", fontSize: "1.1rem" }}>
               {playerInfo.capital?.toLocaleString()}đ
             </strong>
           </div>

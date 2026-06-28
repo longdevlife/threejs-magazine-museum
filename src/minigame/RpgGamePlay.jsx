@@ -198,7 +198,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
                 <IconSkull className="w-4 h-4 text-red-500 animate-pulse" /> PHÁ SẢN
               </>
             ) : (
-              `${(playerInfo.capital || 0).toLocaleString()}đ`
+              <span className="pix-num">{`${(playerInfo.capital || 0).toLocaleString()}đ`}</span>
             )}
           </div>
         </div>
@@ -208,7 +208,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         <div style={{ textAlign: "center", flex: 1 }}>
           <div style={{ fontSize: "7px", color: "#8b8680", fontWeight: "800", letterSpacing: "1px" }}>ĐIỂM TÍCH LŨY</div>
           <div style={{ fontSize: "0.95rem", fontWeight: "800", color: "var(--neon-blue)", marginTop: "2px", fontFamily: "var(--font-mono)" }}>
-            {playerInfo.score || 0}đ
+            <span className="pix-num">{playerInfo.score || 0}đ</span>
           </div>
         </div>
         <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />

@@ -1,6 +1,41 @@
 {
   "rules": {
     ".read": true,
-    ".write": true
+    ".write": false,
+    "gameState": {
+      ".write": true,
+      "status": {
+        ".validate": "newData.isString() && newData.val().matches(/^(waiting|playing|phase_1|situation_1|phase_2|situation_2|phase_3|finished)$/)"
+      }
+    },
+    "players": {
+      ".write": true,
+      "$playerId": {
+        ".write": true
+      }
+    },
+    "books": {
+      ".write": true,
+      "$bookId": {
+        ".write": true
+      }
+    },
+    "traps": {
+      ".write": true,
+      "$trapId": {
+        ".write": true
+      }
+    },
+    "votes": {
+      ".write": true,
+      "$situationId": {
+        "$playerId": {
+          ".write": true
+        }
+      }
+    },
+    "answers": {
+      ".write": true
+    }
   }
 }

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ref, update } from "firebase/database";
+import { ref, remove, runTransaction } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { PHASE_CONFIGS } from "./situations";
+import { applyPlayerDelta } from "./gameStateUtils";
 
 const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState }) => {
   const iframeRef = useRef(null);
@@ -26,19 +27,43 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
 
   // 1. Lắng nghe postMessage từ Phaser
   useEffect(() => {
+    const applyScoreCapitalDelta = (delta) =>
+      runTransaction(
+        ref(db, `players/${playerId}`),
+        (player) => applyPlayerDelta(player, delta),
+        { applyLocally: false }
+      );
+
+    const claimBook = async (bookId) => {
+      if (!bookId) return false;
+
+      const result = await runTransaction(
+        ref(db, `books/${bookId}`),
+        (book) => {
+          if (!book || book.claimedBy) return book;
+          return { ...book, claimedBy: playerId, claimedAt: Date.now() };
+        },
+        { applyLocally: false }
+      );
+
+      const claimedBook = result.snapshot.val();
+      const didClaim = claimedBook?.claimedBy === playerId;
+      if (didClaim) {
+        await remove(ref(db, `books/${bookId}`));
+      }
+      return didClaim;
+    };
+
     const handleMessage = async (e) => {
       if (!e.data) return;
 
       // A. Nhặt sách tri thức → Bonus theo phase config
       if (e.data.type === "NHAT_SACH") {
-        const { score: bonusScore, capital: bonusCapital } = phaseConfig.bookReward;
-        const newScore = Math.max(0, (playerInfo.score || 0) + bonusScore);
-        const newCapital = Math.max(0, (playerInfo.capital || 0) + bonusCapital);
+        const didClaim = await claimBook(e.data.bookId);
+        if (!didClaim) return;
 
-        await update(ref(db, `players/${playerId}`), {
-          score: newScore,
-          capital: newCapital,
-        });
+        const { score: bonusScore, capital: bonusCapital } = phaseConfig.bookReward;
+        await applyScoreCapitalDelta({ score: bonusScore, capital: bonusCapital });
 
         addFloatingText(`+${bonusScore}đ 📖`, "#4caf50");
       }
@@ -50,14 +75,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         iframeRef.current?.contentWindow?.postMessage({ type: "FREEZE" }, "*");
 
         const { score: penScore, capital: penCapital } = phaseConfig.trapPenalty;
-        const newCapital = Math.max(0, (playerInfo.capital || 0) + penCapital);
-        const newScore = Math.max(0, (playerInfo.score || 0) + penScore);
-
-        update(ref(db, `players/${playerId}`), {
-          capital: newCapital,
-          score: newScore,
-          isBankrupt: newCapital <= 0,
-        });
+        await applyScoreCapitalDelta({ score: penScore, capital: penCapital });
 
         addFloatingText(`${penScore}đ ⚡`, "#ff3344");
       }
@@ -65,7 +83,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [playerInfo, playerId, phaseConfig]);
+  }, [playerId, phaseConfig]);
 
   // 2. Bộ đếm ngược đóng băng
   useEffect(() => {
@@ -161,7 +179,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         </div>
 
         {/* Iframe Phaser RPG */}
-        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", border: "4px solid #333", borderRadius: "8px", overflow: "hidden", background: "#000" }}>
+        <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", border: "4px solid #333", borderRadius: "8px", overflow: "hidden", background: "#000" }}>
           <iframe
             ref={iframeRef}
             src={`/rpg/index.html?role=player&id=${playerId}&name=${encodeURIComponent(playerName)}`}

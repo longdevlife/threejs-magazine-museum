@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ref, set, onValue, remove, update } from "firebase/database";
+import { ref, set, onValue, remove, update, get, runTransaction } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { situations, PHASE_CONFIGS } from "./situations";
+import { applyPlayerDelta } from "./gameStateUtils";
 import { checkMapCollisions, WORLD_WIDTH, WORLD_HEIGHT } from "./rpgEngine";
 
 const HostView = ({ gameState, dbConnected, onResetRole }) => {
@@ -14,6 +15,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   const requestRef = useRef(null);
   const lastSyncTime = useRef(0);
   const platformFeeTimer = useRef(null);
+  const platformFeeInFlight = useRef(false);
   const [books, setBooks] = useState({});
 
   // Cấu hình bẫy động theo phase
@@ -69,27 +71,34 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
   // Platform fee timer — tự động trừ vốn mọi player
   useEffect(() => {
     if (platformFeeTimer.current) clearInterval(platformFeeTimer.current);
+    platformFeeInFlight.current = false;
 
     const phaseKey = gameState.status; // phase_1, phase_2, phase_3
     const config = PHASE_CONFIGS[phaseKey];
     if (config && config.platformFeeInterval > 0) {
-      platformFeeTimer.current = setInterval(() => {
-        // Đọc players hiện tại và trừ vốn
-        const playersSnap = players;
-        const updates = {};
-        Object.entries(playersSnap).forEach(([id, info]) => {
-          const newCapital = Math.max(0, (info.capital || 0) - config.platformFeeAmount);
-          updates[`players/${id}/capital`] = newCapital;
-          if (newCapital <= 0) updates[`players/${id}/isBankrupt`] = true;
-        });
-        if (Object.keys(updates).length > 0) {
-          update(ref(db), updates);
+      platformFeeTimer.current = setInterval(async () => {
+        if (platformFeeInFlight.current) return;
+        platformFeeInFlight.current = true;
+        try {
+          const playersSnapshot = await get(ref(db, "players"));
+          const currentPlayers = playersSnapshot.val() || {};
+          await Promise.all(
+            Object.keys(currentPlayers).map((id) =>
+              runTransaction(
+                ref(db, `players/${id}`),
+                (player) => applyPlayerDelta(player, { capital: -config.platformFeeAmount }),
+                { applyLocally: false }
+              )
+            )
+          );
+        } finally {
+          platformFeeInFlight.current = false;
         }
       }, config.platformFeeInterval);
     }
 
     return () => { if (platformFeeTimer.current) clearInterval(platformFeeTimer.current); };
-  }, [gameState.status, Object.keys(players).length]);
+  }, [gameState.status]);
 
   // RPG Host Loop — bẫy + sách
   const hostLoop = () => {
@@ -327,7 +336,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
                 <iframe
                   ref={iframeRef}
                   src="/rpg/index.html?role=host"
-                  style={{ width: "100%", aspectRatio: "4/3", border: "none", display: "block" }}
+                  style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
                   title="RPG Spectator"
                 />
               </div>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { ref, onValue, set, get } from "firebase/database";
+import { ref, onValue, set } from "firebase/database";
 import { db } from "./firebaseConfig";
 import HostView from "./HostView";
 import PlayerView from "./PlayerView";
+import { normalizeGameState } from "./gameStateUtils";
 import "./minigame.css";
 
 export const MinigamePage = () => {
@@ -49,7 +50,11 @@ export const MinigamePage = () => {
     const unsubscribe = onValue(gameStateRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setGameState(data);
+        const normalized = normalizeGameState(data);
+        setGameState(normalized);
+        if (normalized.status !== data.status) {
+          set(gameStateRef, normalized);
+        }
       } else {
         // Khởi tạo trạng thái mặc định nếu database trống
         set(gameStateRef, { status: "waiting" });

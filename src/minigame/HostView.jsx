@@ -187,7 +187,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
       trapPenalty: config.trapPenalty,
     };
 
-    update(ref(db), updates);
+    await update(ref(db), updates);
   };
 
   const handleTriggerSituation = (sitNum) => {
@@ -202,6 +202,7 @@ const HostView = ({ gameState, dbConnected, onResetRole }) => {
     await remove(ref(db, "votes"));
     await remove(ref(db, "books"));
     await remove(ref(db, "traps"));
+    await remove(ref(db, "players"));
     await set(ref(db, "gameState"), { status: "waiting" });
   };
 

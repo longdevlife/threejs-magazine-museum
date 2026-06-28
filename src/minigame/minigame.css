@@ -1068,3 +1068,58 @@
     transform: translateX(-50%) translateY(-80px);
   }
 }
+
+/* Minimalist Dashboard layout */
+.kpi-card-flat {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.kpi-label {
+  font-size: 0.68rem;
+  color: #8b8680;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-val {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #fff;
+  font-family: var(--font-mono);
+}
+
+.btn-market-flat {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: #fff;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.btn-market-flat:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  transform: translateY(-1px);
+}
+
+.btn-market-flat:active {
+  transform: translateY(1px);
+  background: rgba(255, 255, 255, 0.005) !important;
+}
+
+.leaderboard-item-flat {
+  transition: all 0.25s ease;
+}
+
+.leaderboard-item-flat:hover {
+  background: rgba(255, 255, 255, 0.025) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}

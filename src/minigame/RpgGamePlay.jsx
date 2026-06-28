@@ -210,10 +210,10 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1400px", margin: "0 auto" }}>
 
-      {/* Phase indicator + HUD - Vintage Academic styling */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#ede8e1", border: "1px solid rgba(0, 0, 0, 0.08)", borderRadius: "16px", padding: "12px 20px", marginBottom: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6)", color: "#2c1a0e" }}>
+      {/* Phase indicator + HUD - Pixel UI/UX 8-bit styling */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#fff6d7", border: "3px solid #000", borderRadius: "0px", padding: "12px 20px", marginBottom: "12px", boxShadow: "5px 5px 0 rgba(0,0,0,0.5)", color: "#2c1a0e" }}>
         {/* Phase badge */}
         <div style={{ textAlign: "center", minWidth: "90px" }}>
           <div style={{ fontSize: "7px", color: "var(--neon-gold)", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px" }}>Giai đoạn</div>
@@ -221,7 +221,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
             {getPhaseIcon(gameState.status, "w-4 h-4")} {phaseConfig.name.split(" ").slice(0, 2).join(" ")}
           </div>
         </div>
-        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
+        <div style={{ width: "2px", background: "#000", margin: "0 12px", height: "30px" }} />
 
         {/* Vốn */}
         <div style={{ textAlign: "center", flex: 1 }}>
@@ -236,7 +236,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
             )}
           </div>
         </div>
-        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
+        <div style={{ width: "2px", background: "#000", margin: "0 12px", height: "30px" }} />
 
         {/* Điểm */}
         <div style={{ textAlign: "center", flex: 1 }}>
@@ -245,7 +245,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
             <span className="pix-num">{playerInfo.score || 0}đ</span>
           </div>
         </div>
-        <div style={{ width: "1px", background: "rgba(0,0,0,0.06)", margin: "0 12px", height: "30px" }} />
+        <div style={{ width: "2px", background: "#000", margin: "0 12px", height: "30px" }} />
 
         {/* Nhân vật */}
         <div style={{ textAlign: "center", flex: 1 }}>

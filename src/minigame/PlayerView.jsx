@@ -138,7 +138,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
   // ===== 1. CHƯA ĐĂNG KÝ =====
   if (!isJoined) {
     return (
-      <div className="minigame-panel" style={{ maxWidth: "450px" }}>
+      <div className="minigame-panel player-panel-md">
         <h2 className="minigame-title" style={{ fontSize: "1.8rem" }}>THAM GIA CHƠI</h2>
         <p className="minigame-subtitle" style={{ fontSize: "1rem", marginBottom: "25px" }}>Mở shop nhỏ, săn cơ hội kinh doanh và sống sót trước sức ép nền tảng</p>
         <form onSubmit={handleJoinGame} className="join-form">
@@ -187,7 +187,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
   // ===== 2. WAITING =====
   if (gameState.status === "waiting") {
     return (
-      <div className="minigame-panel" style={{ maxWidth: "450px", textAlign: "center" }}>
+      <div className="minigame-panel player-panel-sm" style={{ textAlign: "center" }}>
         <div style={{ marginBottom: "20px", display: "flex", justifyContent: "center" }}>
           <IconPhone className="w-16 h-16 text-cyan-400 animate-bounce" />
         </div>
@@ -214,7 +214,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
   if (isRpgPhase) {
     if (playerInfo.isBankrupt) {
       return (
-        <div className="minigame-panel" style={{ maxWidth: "480px", textAlign: "center" }}>
+        <div className="minigame-panel player-panel-sm" style={{ textAlign: "center" }}>
           <IconSkull className="w-16 h-16 mx-auto text-red-500 animate-pulse" />
           <h2 className="minigame-title" style={{ fontSize: "1.6rem" }}>SHOP ĐÃ BỊ LOẠI</h2>
           <p className="minigame-subtitle" style={{ lineHeight: "1.6" }}>
@@ -247,7 +247,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     const sit = situations[sitIdx];
 
     return (
-      <div className="minigame-panel" style={{ maxWidth: "550px" }}>
+      <div className="minigame-panel player-panel-md">
         <div style={{ textAlign: "center", marginBottom: "15px" }}>
           <IconBolt className="w-12 h-12 mx-auto text-red-500 animate-pulse" />
           <h2 style={{ color: "var(--neon-red)", fontSize: "1.3rem", fontWeight: "bold", margin: "8px 0" }}>
@@ -330,7 +330,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     }
 
     return (
-      <div className="minigame-panel" style={{ maxWidth: "450px", textAlign: "center" }}>
+      <div className="minigame-panel player-panel-sm" style={{ textAlign: "center" }}>
         <div style={{ marginBottom: "15px", display: "flex", justifyContent: "center" }}>
           <IconTrophy className="w-16 h-16 text-yellow-500 animate-pulse" />
         </div>

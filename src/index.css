@@ -1,7 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap");
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
 
 #root {
   width: 100%;
@@ -280,9 +281,6 @@ h1, h2, h3 {
 }
 
 /* ── Fluid Island Navbar ── */
-.navbar-theory-wrapper {
-  /* This wrapper centers the navbar and avoids edge-to-edge layout */
-}
 .navbar-theory {
   position: relative;
   background: rgba(255, 255, 255, 0.7);

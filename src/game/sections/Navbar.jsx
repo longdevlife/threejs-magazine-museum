@@ -4,6 +4,7 @@ const NAV_LINKS = [
   { href: '#hero', label: 'Tổng Quan' },
   { href: '#book', label: 'Tạp chí' },
   { href: '#museum', label: 'Bảo tàng' },
+  { href: '#minigame', label: 'Mini Game' },
   { href: '#ai', label: 'AI Usage' },
 ];
 
@@ -17,6 +18,10 @@ export default function Navbar({ activeTab, onTabChange }) {
     }
     if (activeTab === 'museum') {
       setActive('#museum');
+      return;
+    }
+    if (activeTab === 'minigame') {
+      setActive('#minigame');
       return;
     }
     if (activeTab === 'ai') {
@@ -47,6 +52,14 @@ export default function Navbar({ activeTab, onTabChange }) {
       return;
     }
 
+    // Switch to Minigame Tab
+    if (id === 'minigame') {
+      if (activeTab !== 'minigame' && onTabChange) {
+        onTabChange('minigame');
+      }
+      return;
+    }
+
     // Switch to AI Usage Tab
     if (id === 'ai') {
       if (activeTab !== 'ai' && onTabChange) {
@@ -56,7 +69,7 @@ export default function Navbar({ activeTab, onTabChange }) {
     }
 
     // Handing clicks to Intro Tab sections while currently on another Tab
-    if (activeTab !== 'intro' && id !== 'book' && id !== 'museum' && id !== 'ai') {
+    if (activeTab !== 'intro' && id !== 'book' && id !== 'museum' && id !== 'minigame' && id !== 'ai') {
       if (onTabChange) {
         onTabChange('intro');
       }

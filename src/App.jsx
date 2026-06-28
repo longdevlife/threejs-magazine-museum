@@ -5,11 +5,13 @@ const BookPage = lazy(() => import("./book/BookPage").then((module) => ({ defaul
 const TheoryPage = lazy(() => import("./game/TheoryPage").then((module) => ({ default: module.TheoryPage })));
 const AIUsagePage = lazy(() => import("./ai-usage/AIUsagePage").then((module) => ({ default: module.AIUsagePage })));
 const MuseumPage = lazy(() => import("./museum/MuseumPage").then((module) => ({ default: module.MuseumPage })));
+const MinigamePage = lazy(() => import("./minigame/MinigamePage").then((module) => ({ default: module.MinigamePage })));
 
 const TABS = [
   { id: "intro", label: "Mở Đầu" },
   { id: "book", label: "Tạp chí" },
   { id: "museum", label: "Bảo tàng" },
+  { id: "minigame", label: "Mini Game" },
   { id: "ai", label: "AI Usage" },
 ];
 
@@ -94,6 +96,7 @@ function App() {
           {displayedTab === "intro" && <TheoryPage />}
           {displayedTab === "book" && <BookPage skipIntro={hasVisitedBook} onIntroFinish={() => setHasVisitedBook(true)} />}
           {displayedTab === "museum" && <MuseumPage />}
+          {displayedTab === "minigame" && <MinigamePage />}
           {displayedTab === "ai" && <AIUsagePage />}
         </Suspense>
       </div>

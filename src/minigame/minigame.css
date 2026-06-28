@@ -184,6 +184,363 @@
   box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
 }
 
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 10px;
+}
+
+.character-option {
+  min-height: 142px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 4px;
+  padding: 12px 10px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.character-option:hover,
+.character-option.selected {
+  background: color-mix(in srgb, var(--character-color) 18%, rgba(255, 255, 255, 0.04));
+  border-color: var(--character-color);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--character-color) 40%, transparent);
+  transform: translateY(-2px);
+}
+
+.pixel-character {
+  --skin: #ffd79b;
+  --hair: #f4d154;      /* Blonde hair */
+  --hat: transparent;
+  --shirt: #ffffff;     /* White shirt */
+  --pants: #eceff1;     /* White pants/skirt */
+  --shoe: #37474f;      /* Dark grey/black shoes */
+  --accent: #ffffff;
+  display: block;
+  height: 58px;
+  image-rendering: pixelated;
+  margin: 0 auto 4px;
+  position: relative;
+  width: 42px;
+}
+
+.pixel-character span {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+}
+
+.pixel-head {
+  background: var(--skin);
+  border: 2px solid #3d2819;
+  height: 20px;
+  left: 11px;
+  top: 8px;
+  width: 20px;
+  z-index: 3;
+}
+
+.pixel-hair {
+  background: var(--hair);
+  height: 8px;
+  left: 9px;
+  top: 5px;
+  width: 24px;
+  z-index: 4;
+}
+
+.pixel-hair::before,
+.pixel-hair::after {
+  background: var(--hair);
+  content: "";
+  height: 10px;
+  position: absolute;
+  top: 5px;
+  width: 5px;
+}
+
+.pixel-hair::before {
+  left: 0;
+}
+
+.pixel-hair::after {
+  right: 0;
+}
+
+.pixel-hat {
+  background: var(--hat);
+  height: 3px;
+  left: 11px;
+  top: 6px;
+  width: 20px;
+  z-index: 5;
+  border-radius: 3px 3px 0 0;
+}
+
+.pixel-hat::before {
+  left: -2px;
+}
+
+.pixel-hat::after {
+  right: -2px;
+}
+
+.pixel-body {
+  background: var(--shirt);
+  border: 2px solid #3d2819;
+  height: 21px;
+  left: 9px;
+  top: 28px;
+  width: 24px;
+  z-index: 2;
+}
+
+.pixel-body::before {
+  background: var(--accent);
+  content: "";
+  height: 15px;
+  left: 10px;
+  position: absolute;
+  top: 2px;
+  width: 4px;
+}
+
+.pixel-arm {
+  background: var(--shirt);
+  border: 2px solid #3d2819;
+  height: 17px;
+  top: 29px;
+  width: 8px;
+  z-index: 1;
+}
+
+.pixel-arm-left {
+  left: 4px;
+}
+
+.pixel-arm-right {
+  right: 4px;
+}
+
+.pixel-leg {
+  background: var(--pants);
+  border: 2px solid #3d2819;
+  height: 12px;
+  top: 47px;
+  width: 10px;
+  z-index: 1;
+}
+
+.pixel-leg-left {
+  left: 10px;
+}
+
+.pixel-leg-right {
+  right: 10px;
+}
+
+.pixel-leg::after {
+  background: var(--shoe);
+  bottom: -4px;
+  content: "";
+  height: 4px;
+  left: -2px;
+  position: absolute;
+  width: 10px;
+}
+
+.pixel-pack,
+.pixel-accessory {
+  display: none;
+}
+
+/* Character Specific Sprites */
+
+/* 1. MISA (Default) */
+.sprite-default {
+  --hat: #546e7a;
+}
+.sprite-default .pixel-hat::before,
+.sprite-default .pixel-hat::after {
+  content: "";
+  background: var(--hat);
+  border: 1px solid #3d2819;
+  height: 8px;
+  width: 4px;
+  position: absolute;
+  top: -2px;
+}
+
+/* 2. SHIPPER */
+.sprite-shipper {
+  --hat: #e91e63;
+}
+.sprite-shipper .pixel-hat {
+  height: 5px;
+  left: 10px;
+  top: 4px;
+  width: 22px;
+  border-radius: 0;
+}
+.sprite-shipper .pixel-hat::before,
+.sprite-shipper .pixel-hat::after {
+  content: "";
+  background: var(--hat);
+  border: 1px solid #3d2819;
+  height: 8px;
+  width: 4px;
+  position: absolute;
+  top: -2px;
+}
+.sprite-shipper .pixel-hat::after {
+  /* Visor/Brim for cap */
+  background: var(--hat);
+  border: none;
+  content: "";
+  height: 3px;
+  position: absolute;
+  right: -5px;
+  top: 2px;
+  width: 7px;
+}
+.sprite-shipper .pixel-pack {
+  background: #00bcd4;
+  border: 2px solid #3d2819;
+  display: block;
+  height: 17px;
+  left: 1px;
+  top: 30px;
+  width: 8px;
+  z-index: 0;
+}
+
+/* 3. STUDENT */
+.sprite-student {
+  --hat: #56427d;
+}
+.sprite-student .pixel-hat {
+  height: 5px;
+  left: 6px;
+  width: 30px;
+  border-radius: 0;
+}
+.sprite-student .pixel-hat::after {
+  /* Yellow tassel */
+  background: #ffb700;
+  border: none;
+  content: "";
+  height: 9px;
+  position: absolute;
+  right: 2px;
+  top: 4px;
+  width: 3px;
+}
+.sprite-student .pixel-hair::before,
+.sprite-student .pixel-hair::after {
+  background: #4caf50;
+  border: 1px solid #3d2819;
+  content: "";
+  height: 8px;
+  position: absolute;
+  top: 5px;
+  width: 4px;
+}
+.sprite-student .pixel-hair::before {
+  left: -2px;
+}
+.sprite-student .pixel-hair::after {
+  right: -2px;
+}
+
+/* 4. ENTREPRENEUR */
+.sprite-entrepreneur {
+  --hat: #37474f;
+}
+.sprite-entrepreneur .pixel-hat::before,
+.sprite-entrepreneur .pixel-hat::after {
+  content: "";
+  background: var(--hat);
+  border: 1px solid #3d2819;
+  height: 8px;
+  width: 4px;
+  position: absolute;
+  top: -2px;
+}
+.sprite-entrepreneur .pixel-body::after {
+  background: #ffd15c;
+  content: "";
+  height: 10px;
+  left: 10px;
+  position: absolute;
+  top: 3px;
+  width: 4px;
+}
+
+/* 5. SELLER */
+.sprite-seller {
+  --hat: #ff4081;
+}
+.sprite-seller .pixel-hat::before,
+.sprite-seller .pixel-hat::after {
+  content: "";
+  background: var(--hat);
+  border: 1px solid #3d2819;
+  height: 8px;
+  width: 4px;
+  position: absolute;
+  top: -2px;
+}
+.sprite-seller .pixel-accessory {
+  background: #ffd54f;
+  border: 2px solid #3d2819;
+  display: block;
+  height: 14px;
+  right: -1px;
+  top: 33px;
+  width: 10px;
+  z-index: 4;
+}
+
+.pixel-character-small {
+  height: 30px;
+  margin: -4px 0 -6px;
+  transform: scale(0.55);
+  transform-origin: center;
+  width: 24px;
+}
+
+.character-name {
+  color: var(--character-color);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.character-desc {
+  color: #b8b0aa;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.selected-character-badge {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--character-color);
+  border-radius: 999px;
+  color: var(--character-color);
+  display: inline-flex;
+  font-size: 0.9rem;
+  font-weight: 800;
+  gap: 8px;
+  margin: 4px 0 16px;
+  padding: 7px 14px;
+}
+
 .btn-cyber {
   background: linear-gradient(135deg, var(--neon-red), #9b1c20);
   color: #fff;

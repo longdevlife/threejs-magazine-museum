@@ -3,9 +3,11 @@ import { ref, remove, runTransaction } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { PHASE_CONFIGS } from "./situations";
 import { applyPlayerDelta } from "./gameStateUtils";
+import { getCharacterOption } from "./characterOptions";
 
 const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState }) => {
   const iframeRef = useRef(null);
+  const selectedCharacter = getCharacterOption(playerInfo.character);
 
   // Trạng thái đóng băng
   const [isFrozen, setIsFrozen] = useState(false);
@@ -155,6 +157,15 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
           <div style={{ fontSize: "8px", color: "#795548", fontWeight: "bold" }}>ĐIỂM</div>
           <div style={{ fontSize: "14px", fontWeight: "bold", color: "#1976d2" }}>{playerInfo.score || 0}đ</div>
         </div>
+        <div style={{ width: "2px", background: "#a16b47", margin: "0 8px", height: "30px" }} />
+
+        {/* Nhân vật */}
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ fontSize: "8px", color: "#795548", fontWeight: "bold" }}>NHÂN VẬT</div>
+          <div style={{ fontSize: "14px", fontWeight: "bold", color: selectedCharacter.color }}>
+            {selectedCharacter.icon} {selectedCharacter.label}
+          </div>
+        </div>
       </div>
 
       {/* Thông báo phí sàn */}
@@ -182,7 +193,7 @@ const RpgGamePlay = ({ playerId, playerName, playerInfo, dbConnected, gameState 
         <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", border: "4px solid #333", borderRadius: "8px", overflow: "hidden", background: "#000" }}>
           <iframe
             ref={iframeRef}
-            src={`/rpg/index.html?role=player&id=${playerId}&name=${encodeURIComponent(playerName)}`}
+            src={`/rpg/index.html?role=player&id=${playerId}&name=${encodeURIComponent(playerName)}&character=${encodeURIComponent(selectedCharacter.id)}&color=${encodeURIComponent(selectedCharacter.color)}`}
             style={{ width: "100%", height: "100%", border: "none", display: "block" }}
             title="Phaser RPG"
           />

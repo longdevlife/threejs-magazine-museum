@@ -3,9 +3,13 @@ import { ref, set, update, onValue, get } from "firebase/database";
 import { db } from "./firebaseConfig";
 import { situations, PHASE_CONFIGS } from "./situations";
 import RpgGamePlay from "./RpgGamePlay";
+import { CHARACTER_OPTIONS, getCharacterOption } from "./characterOptions";
 
 const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnected, onResetRole }) => {
   const [tempName, setTempName] = useState(playerName);
+  const [selectedCharacterId, setSelectedCharacterId] = useState(() => {
+    return localStorage.getItem("minigame_character_id") || "default";
+  });
   const [isJoined, setIsJoined] = useState(false);
   const [playerInfo, setPlayerInfo] = useState({
     score: 0, capital: 20000000, streak: 0, isBankrupt: false,
@@ -52,10 +56,19 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
     e.preventDefault();
     if (!tempName.trim()) return;
     const cleanName = tempName.trim().substring(0, 15);
+    const selectedCharacter = getCharacterOption(selectedCharacterId);
     setPlayerName(cleanName);
     localStorage.setItem("minigame_player_name", cleanName);
+    localStorage.setItem("minigame_character_id", selectedCharacter.id);
     await set(ref(db, `players/${playerId}`), {
-      name: cleanName, score: 0, capital: 20000000, streak: 0, isBankrupt: false, joinedAt: Date.now(),
+      name: cleanName,
+      character: selectedCharacter.id,
+      color: selectedCharacter.color,
+      score: 0,
+      capital: 20000000,
+      streak: 0,
+      isBankrupt: false,
+      joinedAt: Date.now(),
     });
     setIsJoined(true);
   };
@@ -84,6 +97,7 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
   const isRpgPhase = ["phase_1", "phase_2", "phase_3"].includes(gameState.status);
   const isSituation = gameState.status === "situation_1" || gameState.status === "situation_2";
   const currentConfig = PHASE_CONFIGS[gameState.status];
+  const currentCharacter = getCharacterOption(playerInfo.character);
 
   // ===== 1. CHƯA ĐĂNG KÝ =====
   if (!isJoined) {
@@ -96,7 +110,38 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
             <label className="input-label">Nhập tên / Biệt danh:</label>
             <input type="text" className="game-input" value={tempName} onChange={(e) => setTempName(e.target.value)} placeholder="Ví dụ: Anh Tuấn FPT" maxLength={15} required />
           </div>
-          <button type="submit" className="btn-cyber btn-cyber-blue" style={{ marginTop: "10px" }}>Tham gia ngay</button>
+          <div className="input-group" style={{ marginTop: "20px" }}>
+            <label className="input-label">Chọn nhân vật đại diện:</label>
+            <div className="character-grid">
+              {CHARACTER_OPTIONS.map((char) => {
+                const isSelected = selectedCharacterId === char.id;
+                return (
+                  <div
+                    key={char.id}
+                    className={`character-option ${isSelected ? "selected" : ""}`}
+                    style={{ "--character-color": char.color }}
+                    onClick={() => setSelectedCharacterId(char.id)}
+                  >
+                    <div className={`pixel-character ${char.spriteClass}`}>
+                      <span className="pixel-hat"></span>
+                      <span className="pixel-hair"></span>
+                      <span className="pixel-head"></span>
+                      <span className="pixel-body"></span>
+                      <span className="pixel-arm pixel-arm-left"></span>
+                      <span className="pixel-arm pixel-arm-right"></span>
+                      <span className="pixel-leg pixel-leg-left"></span>
+                      <span className="pixel-leg pixel-leg-right"></span>
+                      <span className="pixel-pack"></span>
+                      <span className="pixel-accessory"></span>
+                    </div>
+                    <div className="character-name">{char.icon} {char.label}</div>
+                    <div className="character-desc">{char.description}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <button type="submit" className="btn-cyber btn-cyber-blue" style={{ marginTop: "20px" }}>Tham gia ngay</button>
         </form>
         <button onClick={onResetRole} style={{ background: "none", border: "none", color: "#8b8680", marginTop: "20px", textDecoration: "underline", cursor: "pointer", fontSize: "0.85rem" }}>Quay lại chọn vai trò</button>
       </div>
@@ -112,6 +157,9 @@ const PlayerView = ({ playerId, playerName, setPlayerName, gameState, dbConnecte
         <p style={{ color: "var(--neon-gold)", fontWeight: "600", fontSize: "1.1rem", margin: "10px 0" }}>
           Xin chào, {playerName}!
         </p>
+        <div className="selected-character-badge" style={{ "--character-color": currentCharacter.color }}>
+          <span>Nhân vật: {currentCharacter.icon} {currentCharacter.label}</span>
+        </div>
         <p style={{ color: "#8b8680", fontSize: "0.95rem", lineHeight: "1.6" }}>
           Bạn đã đăng ký shop thành công. Nhìn lên màn hình máy chiếu — MC sẽ sớm bắt đầu!
         </p>

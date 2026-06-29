@@ -144,65 +144,6 @@ export const AIUsagePage = () => {
             </div>
           </section>
 
-          {/* Part 4: Minh chứng Prompt */}
-          <section className="bg-white/50 border border-[#3D3529]/5 rounded-[20px] p-8 md:p-12 hover:bg-white/80 transition-colors duration-300 mt-8">
-            <div className="flex items-center gap-4 mb-8">
-              <span className="text-[#C5A028] block">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-              </span>
-              <h2 className="font-['Playfair_Display'] text-2xl tracking-wider text-[#3D3529]" style={{ fontVariantNumeric: "lining-nums" }}>4. Minh Chứng Sử Dụng Prompt</h2>
-            </div>
-
-            <div className="space-y-12 font-['Inter']">
-              {/* Prompt 1 */}
-              <div>
-                <h3 className="text-[#3D3529] font-medium text-lg tracking-wide mb-4 font-['Playfair_Display']">I. Cơ sở lý thuyết</h3>
-                <div className="bg-white/80 border border-[#3D3529]/10 rounded-lg p-4 mb-6">
-                  <span className="text-[#C5A028] text-xs font-semibold uppercase tracking-wider block mb-2">Prompt:</span>
-                  <p className="text-[#7A6040] text-[15px] leading-relaxed italic font-['EB_Garamond']">
-                    "Hãy từ giáo trình Kinh tế chính trị Mác - Lênin đưa ra nội dung phân tích cho phần Cơ sở lý thuyết của sự tích tụ và tập trung sản xuất dẫn đến độc quyền và độc quyền nhóm."
-                  </p>
-                </div>
-                <div className="rounded-xl overflow-hidden border border-[#3D3529]/10 shadow-md">
-                  <img src="/images/cosolythuyet.jpg" alt="Đoạn chat cơ sở lý thuyết" className="w-full object-cover" />
-                </div>
-              </div>
-
-              <div className="w-full h-[1px] bg-[#3D3529]/10"></div>
-
-              {/* Prompt 2 */}
-              <div>
-                <h3 className="text-[#3D3529] font-medium text-lg tracking-wide mb-4 font-['Playfair_Display']">II. Liên hệ thực tiễn</h3>
-                <div className="bg-white/80 border border-[#3D3529]/10 rounded-lg p-4 mb-6">
-                  <span className="text-[#C5A028] text-xs font-semibold uppercase tracking-wider block mb-2">Prompt:</span>
-                  <p className="text-[#7A6040] text-[15px] leading-relaxed italic font-['EB_Garamond']">
-                    "Hãy từ giáo trình Kinh tế chính trị Mác - Lênin đưa ra nội dung phân tích cho phần liên hệ thực tiễn của độc quyền nhóm, làm rõ tình hình thị trường gọi xe công nghệ và thương mại điện tử Việt Nam hiện nay."
-                  </p>
-                </div>
-                <div className="rounded-xl overflow-hidden border border-[#3D3529]/10 shadow-md">
-                  <img src="/images/lienhethuctien.jpg" alt="Đoạn chat liên hệ thực tiễn" className="w-full object-cover" />
-                </div>
-              </div>
-
-              <div className="w-full h-[1px] bg-[#3D3529]/10"></div>
-
-              {/* Prompt 3 */}
-              <div>
-                <h3 className="text-[#3D3529] font-medium text-lg tracking-wide mb-4 font-['Playfair_Display']">III. Giá trị vận dụng ngày nay</h3>
-                <div className="bg-white/80 border border-[#3D3529]/10 rounded-lg p-4 mb-6">
-                  <span className="text-[#C5A028] text-xs font-semibold uppercase tracking-wider block mb-2">Prompt:</span>
-                  <p className="text-[#7A6040] text-[15px] leading-relaxed italic font-['EB_Garamond']">
-                    "Hãy từ giáo trình Kinh tế chính trị Mác - Lênin đưa ra nội dung phân tích cho phần biện chứng Bề nổi vs Bản chất của ma trận thuật toán số đối với tài xế, nhà bán lẻ và người tiêu dùng."
-                  </p>
-                </div>
-                <div className="rounded-xl overflow-hidden border border-[#3D3529]/10 shadow-md">
-                  <img src="/images/giatrivandung.jpg" alt="Đoạn chat giá trị vận dụng ngày nay" className="w-full object-cover" />
-                </div>
-              </div>
-
-            </div>
-          </section>
-
         </div>
       </div>
     </div>

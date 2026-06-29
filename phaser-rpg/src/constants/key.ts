@@ -3,6 +3,11 @@ const atlas = {
 } as const;
 
 const image = {
+  opportunityAiSkill: 'opportunity-ai-skill',
+  opportunityLoyalCustomer: 'opportunity-loyal-customer',
+  opportunityNiche: 'opportunity-niche',
+  opportunityOrder: 'opportunity-order',
+  opportunityReview: 'opportunity-review',
   spaceman: 'spaceman',
   tuxemon: 'tuxemon',
 } as const;

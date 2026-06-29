@@ -290,31 +290,17 @@ export class Main extends Phaser.Scene {
           const container = this.add.container(book.x, book.y);
 
           const color = this.parseHexColor(book.color, 0xffd54f);
-          const glow = this.add.graphics();
-          glow.fillStyle(color, 0.24);
-          glow.fillCircle(0, 0, 22);
-          glow.lineStyle(2, color, 1);
-          glow.strokeCircle(0, 0, 18);
-
-          const icon = this.add.graphics();
-          icon.fillStyle(color, 1);
-          icon.fillRoundedRect(-12, -10, 24, 20, 5);
-          icon.lineStyle(2, 0xffffff, 0.9);
-          icon.strokeRoundedRect(-12, -10, 24, 20, 5);
-          icon.fillStyle(0xffffff, 0.9);
-          icon.fillCircle(0, 0, 4);
-
-          const bookLabel = this.add.text(0, -30, book.label || 'Cơ hội', {
-            fontSize: '16px',
-            fontFamily: 'VT323',
-            color: '#ffffff',
-            fontStyle: 'bold',
-            backgroundColor: 'rgba(0,0,0,0.65)',
-            padding: { x: 5, y: 2 },
-          });
-          bookLabel.setOrigin(0.5, 0.5);
-
-          container.add([glow, icon, bookLabel]);
+          const textureKey = this.getOpportunityTextureKey(book.type);
+          if (textureKey) {
+            const itemSprite = this.add.image(0, 0, textureKey);
+            itemSprite.setScale(0.82);
+            container.add([itemSprite]);
+          } else {
+            const marker = this.add.graphics();
+            const icon = this.add.graphics();
+            this.drawOpportunityPixelArt(marker, icon, book.type, color);
+            container.add([marker, icon]);
+          }
           container.setDepth(Depth.AbovePlayer);
 
           this.physics.world.enable(container);
@@ -404,6 +390,7 @@ export class Main extends Phaser.Scene {
           );
           container.setData('activeLabel', trap.label || 'Rủi ro');
           container.setData('immunityMs', trap.immunityMs || 5500);
+          container.setData('trapType', trap.type || '');
 
           this.physics.world.enable(container);
           const body = container.body as Phaser.Physics.Arcade.Body;
@@ -447,6 +434,7 @@ export class Main extends Phaser.Scene {
           'immunityMs',
           trap.immunityMs || localTrap.getData('immunityMs') || 5500,
         );
+        localTrap.setData('trapType', trap.type || localTrap.getData('trapType') || '');
         localTrap.setPosition(trap.x, trap.y);
       });
 
@@ -533,32 +521,12 @@ export class Main extends Phaser.Scene {
         if (!this.localGates.has(id)) {
           const container = this.add.container(gate.x, gate.y);
 
-          // Gate: golden portal marker
-          const outerGlow = this.add.graphics();
-          outerGlow.fillStyle(0xc9922a, 0.25);
-          outerGlow.fillCircle(0, 0, 28);
-
           const portal = this.add.graphics();
-          portal.lineStyle(3, 0xc9922a, 1);
-          portal.strokeCircle(0, 0, 20);
-          portal.lineStyle(2, 0xffd54f, 0.8);
-          portal.strokeCircle(0, 0, 14);
-          portal.fillStyle(0xffd54f, 0.3);
-          portal.fillCircle(0, 0, 10);
+          this.drawPortalPixelArt(portal);
 
-          const gateLabel = this.add.text(0, -30, 'Cổng đang mở...', {
-            fontSize: '16px',
-            fontFamily: 'VT323',
-            color: '#ffd54f',
-            backgroundColor: 'rgba(0,0,0,0.65)',
-            padding: { x: 5, y: 2 },
-          });
-          gateLabel.setOrigin(0.5, 0.5);
-
-          container.add([outerGlow, portal, gateLabel]);
+          container.add([portal]);
           container.setDepth(Depth.AbovePlayer);
           container.setData('activeAt', gate.activeAt || Date.now());
-          container.setData('gateLabel', gateLabel);
 
           this.physics.world.enable(container);
           const phBody = container.body as Phaser.Physics.Arcade.Body;
@@ -595,11 +563,253 @@ export class Main extends Phaser.Scene {
     });
   }
 
-  // Vẽ con mèo hoặc con chó pixel art đầy đủ cả thân và chân
+  private getOpportunityTextureKey(type: string | undefined) {
+    if (type === 'review') return key.image.opportunityReview;
+    if (type === 'order') return key.image.opportunityOrder;
+    if (type === 'loyal_customer') return key.image.opportunityLoyalCustomer;
+    if (type === 'ai_skill') return key.image.opportunityAiSkill;
+    if (type === 'niche_market' || type === 'niche') return key.image.opportunityNiche;
+    return null;
+  }
+
+  private drawPixelGrid(
+    graphics: Phaser.GameObjects.Graphics,
+    grid: number[][],
+    colors: Record<number, number>,
+    pixelSize: number,
+    offsetY = 0,
+  ) {
+    const cols = grid[0].length;
+    const rows = grid.length;
+    const offsetX = -(cols * pixelSize) / 2;
+    const baseY = -(rows * pixelSize) / 2 + offsetY;
+
+    grid.forEach((row, r) => {
+      row.forEach((val, c) => {
+        if (!val) return;
+        graphics.fillStyle(colors[val] || 0xffffff, 1);
+        graphics.fillRect(
+          offsetX + c * pixelSize,
+          baseY + r * pixelSize,
+          pixelSize,
+          pixelSize,
+        );
+      });
+    });
+  }
+
+  private drawOpportunityPixelArt(
+    marker: Phaser.GameObjects.Graphics,
+    icon: Phaser.GameObjects.Graphics,
+    type: string | undefined,
+    color: number,
+  ) {
+    marker.clear();
+    marker.fillStyle(0x000000, 0.28);
+    marker.fillRect(-14, 13, 28, 5);
+    marker.fillStyle(0x101018, 0.95);
+    marker.fillRect(-15, -15, 30, 30);
+    marker.fillStyle(color, 1);
+    marker.fillRect(-12, -12, 24, 24);
+    marker.fillStyle(0xffffff, 0.22);
+    marker.fillRect(-8, -8, 16, 16);
+    marker.fillStyle(0x101018, 1);
+    marker.fillRect(-6, -6, 12, 12);
+
+    const glyphs: Record<string, number[][]> = {
+      order: [
+        [0, 1, 1, 1, 1, 1, 0],
+        [1, 2, 2, 2, 2, 2, 1],
+        [1, 2, 1, 1, 1, 2, 1],
+        [1, 2, 2, 2, 2, 2, 1],
+        [1, 2, 1, 0, 1, 2, 1],
+        [1, 2, 2, 2, 2, 2, 1],
+        [0, 1, 1, 1, 1, 1, 0],
+      ],
+      review: [
+        [0, 0, 2, 0, 2, 0, 0],
+        [0, 2, 1, 2, 1, 2, 0],
+        [2, 1, 1, 1, 1, 1, 2],
+        [0, 2, 1, 1, 1, 2, 0],
+        [0, 0, 2, 1, 2, 0, 0],
+        [0, 2, 1, 0, 1, 2, 0],
+        [2, 0, 0, 0, 0, 0, 2],
+      ],
+      loyal_customer: [
+        [0, 0, 2, 2, 2, 0, 0],
+        [0, 2, 1, 1, 1, 2, 0],
+        [0, 2, 1, 3, 1, 2, 0],
+        [0, 0, 2, 1, 2, 0, 0],
+        [0, 2, 2, 1, 2, 2, 0],
+        [2, 1, 1, 1, 1, 1, 2],
+        [2, 0, 1, 0, 1, 0, 2],
+      ],
+      ai_skill: [
+        [1, 0, 1, 0, 1, 0, 1],
+        [0, 2, 2, 2, 2, 2, 0],
+        [1, 2, 3, 2, 3, 2, 1],
+        [0, 2, 2, 2, 2, 2, 0],
+        [1, 2, 3, 2, 3, 2, 1],
+        [0, 2, 2, 2, 2, 2, 0],
+        [1, 0, 1, 0, 1, 0, 1],
+      ],
+      niche: [
+        [1, 1, 1, 1, 0, 0, 0],
+        [1, 2, 2, 1, 1, 0, 0],
+        [1, 2, 2, 2, 1, 1, 0],
+        [1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0],
+        [0, 1, 1, 1, 0, 0, 0],
+      ],
+    };
+
+    icon.clear();
+    this.drawPixelGrid(icon, glyphs[type || ''] || glyphs.order, {
+      1: 0x0b0b12,
+      2: 0xffffff,
+      3: color,
+    }, 3);
+  }
+
+  private drawPortalPixelArt(graphics: Phaser.GameObjects.Graphics) {
+    const grid = [
+      [0, 0, 0, 1, 1, 1, 0, 0, 0],
+      [0, 0, 1, 2, 2, 2, 1, 0, 0],
+      [0, 1, 2, 3, 3, 3, 2, 1, 0],
+      [1, 2, 3, 0, 3, 0, 3, 2, 1],
+      [1, 2, 3, 3, 4, 3, 3, 2, 1],
+      [1, 2, 3, 0, 3, 0, 3, 2, 1],
+      [0, 1, 2, 3, 3, 3, 2, 1, 0],
+      [0, 0, 1, 2, 2, 2, 1, 0, 0],
+      [0, 0, 0, 1, 1, 1, 0, 0, 0],
+    ];
+
+    graphics.clear();
+    graphics.fillStyle(0x000000, 0.28);
+    graphics.fillRect(-18, 17, 36, 5);
+    this.drawPixelGrid(graphics, grid, {
+      1: 0x2c1a0e,
+      2: 0xc9922a,
+      3: 0xffd54f,
+      4: 0xffffff,
+    }, 4);
+  }
+
+  private getAnimalTrapSpecies(type?: string) {
+    const speciesByType: Record<string, 'cat' | 'dog' | 'fox' | 'rabbit' | 'bird'> = {
+      visibility_squeeze: 'cat',
+      voucher_pressure: 'dog',
+      mall_copy: 'fox',
+      monopoly_price: 'rabbit',
+      platform_fee: 'bird',
+    };
+
+    return speciesByType[type || ''] || 'dog';
+  }
+
+  // Vẽ thú pixel art đầy đủ cả thân và chân
   private drawTrapPixelArt(
     graphics: Phaser.GameObjects.Graphics,
     type?: string,
   ) {
+    {
+      const species = this.getAnimalTrapSpecies(type);
+      const animalGrids: Record<string, number[][]> = {
+        cat: [
+          [0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+          [0, 2, 1, 2, 0, 0, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 2, 2, 2, 2, 1, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 4, 1, 1, 1, 1, 1, 4, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 1, 1, 1, 3, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 1, 1, 3, 3, 3, 1, 1, 1, 2, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 2],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 2, 1],
+          [0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 2],
+          [0, 0, 0, 2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 2, 2, 0],
+          [0, 0, 0, 2, 1, 2, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0],
+          [0, 0, 0, 2, 4, 2, 0, 2, 4, 2, 2, 4, 2, 0, 0, 0],
+        ],
+        dog: [
+          [0, 2, 2, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0],
+          [2, 1, 1, 2, 0, 0, 0, 2, 1, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 1, 1, 2, 2, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 2, 1, 3, 1, 1, 1, 3, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 1, 3, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 3, 4, 3, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 2, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2],
+          [0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+          [0, 0, 0, 2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 2, 0, 0],
+          [0, 0, 0, 2, 1, 2, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0],
+          [0, 0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 0, 0, 0],
+        ],
+        fox: [
+          [0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+          [0, 2, 1, 2, 0, 0, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 2, 2, 2, 2, 1, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0],
+          [2, 1, 4, 1, 1, 1, 1, 1, 4, 1, 2, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 1, 3, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 2, 4, 4, 3, 4, 4, 2, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 2, 1, 1, 1, 2, 0, 0, 0, 0, 2, 2, 4, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 4, 4, 2],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 2, 0],
+          [0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 0, 0],
+          [0, 0, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 0],
+          [0, 0, 0, 2, 4, 2, 0, 2, 4, 2, 0, 2, 4, 2, 0, 0],
+          [0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0],
+        ],
+        rabbit: [
+          [0, 0, 2, 1, 2, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 2, 1, 2, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 2, 1, 2, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 2, 1, 4, 1, 1, 1, 4, 1, 1, 2, 0, 0, 0, 0, 0],
+          [0, 2, 1, 1, 1, 3, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 2, 1, 1, 1, 1, 2, 2, 2, 2, 0, 0, 0, 0],
+          [0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0],
+          [0, 0, 2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 0, 0, 0, 0],
+          [0, 0, 2, 4, 2, 0, 2, 4, 2, 4, 2, 0, 0, 0, 0, 0],
+          [0, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0],
+        ],
+        bird: [
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 2, 2, 1, 1, 1, 2, 2, 0, 0, 0, 0, 0],
+          [0, 0, 0, 2, 1, 1, 1, 4, 1, 1, 1, 2, 0, 0, 0, 0],
+          [0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0],
+          [0, 2, 1, 1, 3, 1, 1, 1, 1, 3, 1, 1, 1, 2, 0, 0],
+          [2, 1, 1, 3, 3, 1, 1, 1, 1, 3, 3, 1, 1, 1, 2, 0],
+          [0, 2, 1, 1, 3, 3, 1, 1, 3, 3, 1, 1, 1, 2, 0, 0],
+          [0, 0, 2, 1, 1, 3, 3, 3, 3, 1, 1, 1, 2, 0, 0, 0],
+          [0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 2, 0, 0, 0, 0],
+          [0, 0, 0, 0, 2, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 2, 4, 2, 4, 2, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 2, 4, 2, 0, 2, 4, 2, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+        ],
+      };
+      const animalColors: Record<string, Record<number, number>> = {
+        cat: { 1: 0xffb74d, 2: 0x2c1a0e, 3: 0xff8a80, 4: 0xffffff },
+        dog: { 1: 0xa1887f, 2: 0x2c1a0e, 3: 0x1a1a1a, 4: 0xe57373 },
+        fox: { 1: 0xf57c00, 2: 0x2c1a0e, 3: 0x1a1a1a, 4: 0xffffff },
+        rabbit: { 1: 0xe0e0e0, 2: 0x2c1a0e, 3: 0xff8a80, 4: 0xffffff },
+        bird: { 1: 0x64b5f6, 2: 0x2c1a0e, 3: 0xffd54f, 4: 0xffffff },
+      };
+
+      graphics.clear();
+      this.drawPixelGrid(graphics, animalGrids[species], animalColors[species], 2);
+      return;
+    }
+
     const isCat = type === 'visibility_squeeze' || type === 'mall_copy';
     const grid = isCat
       ? [
@@ -707,15 +917,8 @@ export class Main extends Phaser.Scene {
   private updateGateVisuals() {
     const now = Date.now();
     this.localGates.forEach((container) => {
-      const label = container.getData('gateLabel') as
-        | Phaser.GameObjects.Text
-        | undefined;
       const activeAt = container.getData('activeAt') || 0;
       const isActive = now >= activeAt;
-      if (label) {
-        label.setText(isActive ? 'Cổng Thoát ⭐' : 'Cổng đang mở...');
-        label.setAlpha(isActive ? 1 : 0.6);
-      }
       container.setAlpha(isActive ? 1 : 0.5);
     });
   }

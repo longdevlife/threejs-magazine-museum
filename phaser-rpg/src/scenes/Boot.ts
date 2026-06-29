@@ -23,6 +23,26 @@ export class Boot extends Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+    this.load.image(
+      key.image.opportunityReview,
+      './opportunity-items/review.png',
+    );
+    this.load.image(
+      key.image.opportunityOrder,
+      './opportunity-items/order.png',
+    );
+    this.load.image(
+      key.image.opportunityLoyalCustomer,
+      './opportunity-items/loyal-customer.png',
+    );
+    this.load.image(
+      key.image.opportunityAiSkill,
+      './opportunity-items/ai-skill.png',
+    );
+    this.load.image(
+      key.image.opportunityNiche,
+      './opportunity-items/niche.png',
+    );
     this.load.image(key.image.tuxemon, assets.tilesets.tuxemon);
     this.load.tilemapTiledJSON(key.tilemap.tuxemon, assets.tilemaps.tuxemon);
     this.load.atlas(

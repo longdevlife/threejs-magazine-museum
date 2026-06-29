@@ -391,9 +391,6 @@ export class Main extends Phaser.Scene {
           container.setData('activeLabel', trap.label || 'Rủi ro');
           container.setData('immunityMs', trap.immunityMs || 5500);
           container.setData('trapType', trap.type || '');
-          container.setData('motionPhase', Math.random() * 1000);
-          container.setData('anchorX', trap.x);
-          container.setData('anchorY', trap.y);
 
           this.physics.world.enable(container);
           const body = container.body as Phaser.Physics.Arcade.Body;
@@ -438,11 +435,7 @@ export class Main extends Phaser.Scene {
           trap.immunityMs || localTrap.getData('immunityMs') || 5500,
         );
         localTrap.setData('trapType', trap.type || localTrap.getData('trapType') || '');
-        localTrap.setData('anchorX', trap.x);
-        localTrap.setData('anchorY', trap.y);
-        if (!this.isAnimalTrapType(trap.type)) {
-          localTrap.setPosition(trap.x, trap.y);
-        }
+        localTrap.setPosition(trap.x, trap.y);
       });
 
       this.localTraps.forEach((val, id) => {
@@ -577,16 +570,6 @@ export class Main extends Phaser.Scene {
     if (type === 'ai_skill') return key.image.opportunityAiSkill;
     if (type === 'niche_market' || type === 'niche') return key.image.opportunityNiche;
     return null;
-  }
-
-  private isAnimalTrapType(type: string | undefined) {
-    return (
-      type === 'visibility_squeeze' ||
-      type === 'mall_copy' ||
-      type === 'voucher_pressure' ||
-      type === 'monopoly_price' ||
-      type === 'platform_fee'
-    );
   }
 
   private drawPixelGrid(
@@ -931,78 +914,6 @@ export class Main extends Phaser.Scene {
     });
   }
 
-  private updateAnimalTrapMotion(time: number) {
-    const animalContainers: Phaser.GameObjects.Container[] = [];
-
-    this.localTraps.forEach((container) => {
-      const type = container.getData('trapType') as string | undefined;
-      if (!this.isAnimalTrapType(type)) return;
-
-      const active = container.getData('active') as
-        | Phaser.GameObjects.Graphics
-        | undefined;
-      if (!active?.visible) return;
-
-      const phase = container.getData('motionPhase') || 0;
-      const anchorX = container.getData('anchorX') || container.x;
-      const anchorY = container.getData('anchorY') || container.y;
-      const stride = Math.sin((time + phase) / 120);
-      const hop = Math.abs(Math.sin((time + phase) / 95));
-      const facing = stride >= 0 ? 1 : -1;
-      const roamX = Math.sin((time + phase) / 420) * 56
-        + Math.sin((time + phase) / 137) * 18;
-      const roamY = Math.cos((time + phase) / 360) * 40
-        + Math.sin((time + phase) / 173) * 14;
-      const footBounce = -hop * 3;
-
-      container.setPosition(
-        anchorX + roamX,
-        anchorY + roamY,
-      );
-      active.setPosition(0, footBounce);
-      active.setScale(facing, 1 + hop * 0.04);
-      active.setRotation(stride * 0.045);
-      animalContainers.push(container);
-    });
-
-    this.spreadAnimalTrapContainers(animalContainers);
-  }
-
-  private spreadAnimalTrapContainers(
-    containers: Phaser.GameObjects.Container[],
-  ) {
-    const minDistance = 44;
-
-    for (let pass = 0; pass < 3; pass++) {
-      for (let i = 0; i < containers.length; i++) {
-        for (let j = i + 1; j < containers.length; j++) {
-          const a = containers[i];
-          const b = containers[j];
-          let dx = b.x - a.x;
-          let dy = b.y - a.y;
-          let distanceSq = dx * dx + dy * dy;
-
-          if (distanceSq < 0.01) {
-            const angle = (i + 1) * 2.399 + (j + 1) * 0.917;
-            dx = Math.cos(angle);
-            dy = Math.sin(angle);
-            distanceSq = 1;
-          }
-
-          const distance = Math.sqrt(distanceSq);
-          if (distance >= minDistance) continue;
-
-          const push = (minDistance - distance) / 2;
-          const nx = dx / distance;
-          const ny = dy / distance;
-
-          a.setPosition(a.x - nx * push, a.y - ny * push);
-          b.setPosition(b.x + nx * push, b.y + ny * push);
-        }
-      }
-    }
-  }
-
   private updateGateVisuals() {
     const now = Date.now();
     this.localGates.forEach((container) => {
@@ -1014,7 +925,6 @@ export class Main extends Phaser.Scene {
 
   update(time: number) {
     this.updateTrapVisuals();
-    this.updateAnimalTrapMotion(time);
     this.updateGateVisuals();
 
     if (playerRole === 'host') {

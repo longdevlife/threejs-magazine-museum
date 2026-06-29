@@ -21,5 +21,3 @@ assert.match(mainSource, /voucher_pressure:\s*'dog'/);
 assert.match(mainSource, /mall_copy:\s*'fox'/);
 assert.match(mainSource, /monopoly_price:\s*'rabbit'/);
 assert.match(mainSource, /platform_fee:\s*'bird'/);
-assert.match(mainSource, /Math\.sin\(\(time \+ phase\) \/ 420\) \* 56/);
-assert.match(mainSource, /Math\.cos\(\(time \+ phase\) \/ 360\) \* 40/);

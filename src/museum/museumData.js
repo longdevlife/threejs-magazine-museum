@@ -29,8 +29,8 @@ export const ROOM_RIGHT_POS = [16, 0, 0];
 const rawRooms = [
   {
     id: "constitutional-legal",
-    title: "Gọi xe công nghệ",
-    shortTitle: "Gọi xe công nghệ",
+    title: "SỰ TRỖI DẬY CỦA NHỮNG NGƯỜI KHỔNG LỒ",
+    shortTitle: "SỰ TRỖI DẬY CỦA NHỮNG NGƯỜI KHỔNG LỒ",
     accent: "#C5272D",
     position: ROOM_LEFT_POS,
     direction: "left",
@@ -87,8 +87,8 @@ const rawRooms = [
   },
   {
     id: "law-supremacy",
-    title: "Thương mại điện tử",
-    shortTitle: "Thương mại điện tử",
+    title: "XIỀNG XÍCH VÔ HÌNH",
+    shortTitle: "XIỀNG XÍCH VÔ HÌNH",
     accent: "#C5A028",
     position: ROOM_CENTER_POS,
     direction: "center",
@@ -145,8 +145,8 @@ const rawRooms = [
   },
   {
     id: "humanistic-rule",
-    title: "Biện chứng Bề nổi & Bản chất",
-    shortTitle: "Bề nổi & Bản chất",
+    title: "PHÍA SAU BỨC MÀN NHUNG",
+    shortTitle: "PHÍA SAU BỨC MÀN NHUNG",
     accent: "#6F8F4E",
     position: ROOM_RIGHT_POS,
     direction: "right",

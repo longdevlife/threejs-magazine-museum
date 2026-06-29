@@ -551,9 +551,9 @@ export function MuseumRoom() {
         accent="#C5A028"
         label="Sảnh chính"
         openingLabels={{
-          left: "Gọi xe công nghệ",
-          back: "Thương mại điện tử",
-          right: "Biện chứng Bề nổi & Bản chất",
+          left: "SỰ TRỖI DẬY CỦA NHỮNG NGƯỜI KHỔNG LỒ",
+          back: "XIỀNG XÍCH VÔ HÌNH",
+          right: "PHÍA SAU BỨC MÀN NHUNG",
         }}
         chandelier="large"
         decor="lobby"
